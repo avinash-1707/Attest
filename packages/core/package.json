@@ -20,5 +20,8 @@
   },
   "dependencies": {
     "@attest/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0"
   }
 }
