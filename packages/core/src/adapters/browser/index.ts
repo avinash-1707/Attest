@@ -15,6 +15,8 @@ export interface BrowserAdapter {
 }
 
 export interface BrowserContext {
+  // A navigation failure (timeout, DNS, refused) is returned as { ok: false } and never thrown; the
+  // navigation guard depends on this, so adapters must map failures into the result, not raise.
   goto(url: string): Promise<NavigationResult>;
   click(target: ResolvedTarget): Promise<void>;
   type(target: ResolvedTarget, text: string): Promise<void>;
@@ -24,5 +26,7 @@ export interface BrowserContext {
   // Continuous evidence streams the executor subscribes to.
   onConsole(cb: (e: ConsoleEvent) => void): void;
   onNetwork(cb: (e: NetworkEvent) => void): void;
+  // Terminal: close() tears down the context and invalidates every onConsole/onNetwork
+  // subscription. Subscribe once for the run; do not close before the final evidence flush.
   close(): Promise<void>;
 }
