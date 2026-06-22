@@ -73,9 +73,16 @@ export class FakeBrowserAdapter implements BrowserAdapter {
 }
 
 export class FakeResolutionAdapter implements ResolutionAdapter {
-  // Set an intent to throw to simulate a resolution miss.
+  // Intents that always miss (permanent resolution failure).
   misses = new Set<string>();
+  // Intents that miss N times then resolve, to exercise the re-resolution retry.
+  failuresBeforeSuccess = new Map<string, number>();
   async resolve(intent: string, _ctx: BrowserContext): Promise<ResolvedTarget> {
+    const remaining = this.failuresBeforeSuccess.get(intent) ?? 0;
+    if (remaining > 0) {
+      this.failuresBeforeSuccess.set(intent, remaining - 1);
+      throw new Error(`fake resolution miss: ${intent}`);
+    }
     if (this.misses.has(intent)) {
       throw new Error(`fake resolution miss: ${intent}`);
     }
