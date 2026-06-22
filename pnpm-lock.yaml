@@ -98,6 +98,9 @@ importers:
       '@attest/contracts':
         specifier: workspace:*
         version: link:../contracts
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@types/node':
         specifier: ^26.0.0

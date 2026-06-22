@@ -19,7 +19,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@attest/contracts": "workspace:*"
+    "@attest/contracts": "workspace:*",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.0.0"

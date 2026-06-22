@@ -1,15 +1,10 @@
 import type { GuardId } from '@attest/contracts';
 import type { A11yNode, ConsoleEvent, NavigationResult, NetworkEvent } from '../adapters/types';
+import type { StepExpectation } from '../journey';
 
 // The five deterministic guards [tech-arch §4.2]. Plain checks over evidence the worker already
 // holds: no LLM, no I/O. A guard yielding a conclusive failure short-circuits the LLM judge for
 // that step's pass/fail [arch §6.3].
-
-export interface StepExpectation {
-  url?: string; // guard #2: expected path after navigation
-  elementText?: string; // guard #3: expected visible text
-  elementRole?: string; // guard #3: expected a11y role
-}
 
 export interface GuardEvidence {
   navigation?: NavigationResult;
