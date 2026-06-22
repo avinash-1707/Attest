@@ -15,17 +15,17 @@
 - Foundational docs: `foundational/prd.md` (v2), `foundational/architecture.md` (v1).
 - Technical docs: `technical/technical-architecture.md` (v1), `project-overview.md`, `code-standards.md`, `ai-workflow-rules.md`, this tracker.
 - Six open implementation questions from `[arch §13]` resolved as provisional MVP defaults in `[tech-arch §7]`.
+- Monorepo scaffold (`[arch §2]`, `[tech-arch §1]`): pnpm workspaces for `packages/{contracts,core,db}`, `apps/{web,dashboard,backend,worker,mcp}`, single `ee` package. Turborepo pipeline (`build`/`dev`/`test`/`lint`/`typecheck`), TS strict + project references, Vitest workspace, Prettier. ESLint `no-restricted-imports` encodes the dependency matrix (`[tech-arch §1.3]`) - verified: `core`→`db` and engine-SDK-in-judge imports both fail lint. `pnpm build` + `pnpm lint` green across all 9 projects. Deps installed by command only; internal links are `workspace:*`. `core` src laid out as `planner/executor/judge/evidence/adapters/{browser,resolution,model}`; apps/ee are placeholders pending framework wiring.
 
 ## In progress
 
-- None yet.
+- None.
 
 ## Next up
 
-1. Monorepo scaffold: workspaces for `packages/{contracts,core,db}`, `apps/{web,dashboard,backend,worker,mcp}`, `ee/`; TS project references + ESLint `no-restricted-imports` encoding `[tech-arch §1.3]`.
-2. `packages/contracts`: the `Attestation` zod schema (`[arch §8]`) + tool I/O + job payload, with round-trip tests (`[tech-arch §9.1]`).
-3. `packages/core` skeleton + adapter interfaces (browser/resolution/model/storage) per `[tech-arch §3]`, with fake adapters for testing.
-4. The five deterministic guards (`[tech-arch §4.2]`) with deterministic unit tests over canned evidence.
+1. `packages/contracts`: the `Attestation` zod schema (`[arch §8]`) + tool I/O + job payload, with round-trip tests (`[tech-arch §9.1]`).
+2. `packages/core` adapter interfaces (browser/resolution/model/storage) per `[tech-arch §3]`, with fake adapters for testing (dir skeleton already scaffolded).
+3. The five deterministic guards (`[tech-arch §4.2]`) with deterministic unit tests over canned evidence.
 
 ## Open questions
 
