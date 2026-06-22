@@ -24,16 +24,17 @@
 
 - `packages/core` pure engine, fully fake-testable (`[arch §4.1]`, `[tech-arch §3, §4]`): (1) adapter interfaces (browser/resolution/model/storage) as canonical TS + in-memory fakes; (2) five deterministic guards over a `GuardEvidence` bundle with fixed run order + precedence; (3) planner (`goal → Journey`, zod-validated LLM output, `PlanError`); (4) executor + `EvidenceCollector` (drives adapters, re-resolves a miss once, per-step guard eval, DOM snapshot + halt on conclusive failure, captures `resolvedBy`); (5) judge + assembler + `runAttestation` orchestrator (guards decide pass/fail, LLM only authors dossier + goal-relative verdict, env failure → `inconclusive`; `assemble` validates against the contract schema before returning). 28 unit tests green; engine imports no transport/storage/engine SDK.
 
+- `packages/db` secrets / envelope encryption (`[tech-arch §6.2]`, `[arch §7.2, §10]`, `[invariant 4]`): app-side AES-256-GCM envelope behind a swappable `KeyProvider`. One GCM primitive (`gcmEncrypt`/`gcmDecrypt`, 96-bit random IV + auth tag packed as `v1.<iv>.<tag>.<ct>`) serves both layers. `KeyProvider` interface abstracts the KEK backend; `createEnvKeyProvider(kek)` is the MVP impl (KEK held in process memory, never logged/persisted; `kekFromEnv()` sources 32 base64 bytes from `ATTEST_KEK`, constructed by the backend so the data layer stays config-free; KMS swap is post-MVP, same encoding = config change not re-encrypt). `createSecretCipher({db, keyProvider}).for(orgId)` get-or-creates a per-org wrapped DEK (`org_dek`, one row/org, `onConflictDoNothing` for the create race), unwraps it (cached in process memory, same trust level as KEK), and seals/opens values. New tables: `org_dek` (wrapped DEK + `kek_id`), `model_key` (BYOK OpenRouter key) and `app_credential` (login creds), both holding **only** sealed `ciphertext` + non-secret display fields. DAL extended with org-scoped `modelKeys` + `appCredentials` repos (ciphertext-only, never plaintext; `appCredentials.create` rejects an app outside the org). Migration `0001` (17 tables). 9 new tests (primitive tamper/wrong-key/bad-length, wrap/unwrap, per-org DEK isolation, DEK survives across cipher instances, repos store ciphertext only); full build/lint/test green, 15 db tests pass. Plaintext exists only in the seal path (write) and open path (enqueue); never in the DAL, logs, or evidence (`[arch §10]`).
+
 ## In progress
 
 - None.
 
 ## Next up
 
-1. Secrets / `KeyProvider`: env-sourced KEK + AES-256-GCM envelope encrypt/decrypt; the **encrypted-secret tables** (`model_key` BYOK, `app_credential`, per-org wrapped-DEK) land here, where the envelope shape is decided - deliberately deferred from the schema pass (`[tech-arch §6]`). Each new table extends the DAL with its org-scoped repo.
-2. Wire BetterAuth route handler + session/key middleware in `apps/backend` (the instance + Drizzle schema already exist); `resolveServiceKey` is the MCP-auth hook.
-3. Concrete adapters behind the §3 seams: browser (Puppeteer/CDP), resolution (Stagehand), model (OpenRouter), storage (R2/disk).
-4. API DTOs (`[tech-arch §2.1]`): run-create, run-status, evidence-ref resolution, app/key management - to land with the `apps/backend` routes that consume them.
+1. Wire BetterAuth route handler + session/key middleware in `apps/backend` (the instance + Drizzle schema already exist); `resolveServiceKey` is the MCP-auth hook. The backend constructs the `KeyProvider` (`createEnvKeyProvider(kekFromEnv())`) + `SecretCipher` and owns the seal-on-write / open-at-enqueue paths.
+2. Concrete adapters behind the §3 seams: browser (Puppeteer/CDP), resolution (Stagehand), model (OpenRouter), storage (R2/disk).
+3. API DTOs (`[tech-arch §2.1]`): run-create, run-status, evidence-ref resolution, app/key/model-key/credential management - to land with the `apps/backend` routes that consume them. Read API must project `model_key`/`app_credential` to label/provider/prefix only, never `ciphertext` (`[invariant 4]`).
 
 ## Open questions
 

@@ -7,6 +7,8 @@ import { runRepo } from './run.repo';
 import { attestationRepo } from './attestation.repo';
 import { evidenceRepo } from './evidence.repo';
 import { usageRepo } from './usage.repo';
+import { modelKeyRepo } from './model-key.repo';
+import { appCredentialRepo } from './app-credential.repo';
 
 // Every repository here is pre-bound to one orgId. This is the only way to reach tenant data:
 // there is no "all rows" path [arch §5.2, invariant 3].
@@ -19,6 +21,8 @@ export function forOrg(db: Db, orgId: string) {
     attestations: attestationRepo(db, orgId),
     evidence: evidenceRepo(db, orgId),
     usage: usageRepo(db, orgId),
+    modelKeys: modelKeyRepo(db, orgId),
+    appCredentials: appCredentialRepo(db, orgId),
   };
 }
 
