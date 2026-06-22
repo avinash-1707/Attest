@@ -22,11 +22,14 @@ export function evidenceRepo(db: Db, orgId: string) {
       return one(await db.insert(evidenceRef).values({ orgId, ...input }).returning());
     },
 
+    // Idempotent on storageKey: a job re-delivery (queue at-least-once) re-inserts the same refs, so
+    // the unique index must absorb the conflict rather than throw and wedge the run [tech-arch §5.4].
     async createMany(inputs: NewEvidence[]): Promise<EvidenceRefRow[]> {
       if (!inputs.length) return [];
       return db
         .insert(evidenceRef)
         .values(inputs.map((i) => ({ orgId, ...i })))
+        .onConflictDoNothing({ target: evidenceRef.storageKey })
         .returning();
     },
 

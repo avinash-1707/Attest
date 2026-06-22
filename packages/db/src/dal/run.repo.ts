@@ -76,6 +76,15 @@ export function runRepo(db: Db, orgId: string) {
         .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
     },
 
+    // Terminal operational rejection (allowlist denial, missing app, final-attempt worker fault) in a
+    // single write, so there is no partial-write window between the error and the lifecycle.
+    async failPermanently(runId: string, message: string): Promise<void> {
+      await db
+        .update(run)
+        .set({ lifecycle: 'canceled', finishedAt: new Date(), error: message })
+        .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
+    },
+
     // Bumps the environment-failure retry counter; returns the new attempt count [tech-arch §7.5].
     async incrementAttempt(runId: string): Promise<number | undefined> {
       const [row] = await db

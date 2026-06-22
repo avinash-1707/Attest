@@ -140,4 +140,32 @@ describe('run lifecycle', () => {
 
     expect(await a.runs.incrementAttempt(run.id)).toBe(1);
   });
+
+  it('failPermanently cancels and records the error in one write', async () => {
+    const a = dao.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    const run = await a.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' });
+
+    await a.runs.failPermanently(run.id, 'navigation target not in allowlist');
+    const row = await a.runs.get(run.id);
+    expect(row?.lifecycle).toBe('canceled');
+    expect(row?.error).toBe('navigation target not in allowlist');
+  });
+});
+
+describe('evidence idempotency [tech-arch §5.4]', () => {
+  it('absorbs a re-delivered storageKey instead of throwing on the unique index', async () => {
+    const a = dao.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    const run = await a.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' });
+    const rows = [
+      { appId: app.id, runId: run.id, kind: 'screenshot' as const, storageKey: 'org_a/app/s.png' },
+      { appId: app.id, runId: run.id, kind: 'dom_snapshot' as const, storageKey: 'org_a/app/d.html' },
+    ];
+
+    await a.evidence.createMany(rows);
+    // Second delivery of the same job must not throw and must not duplicate rows.
+    await expect(a.evidence.createMany(rows)).resolves.toBeDefined();
+    expect(await a.evidence.listForRun(run.id)).toHaveLength(2);
+  });
 });

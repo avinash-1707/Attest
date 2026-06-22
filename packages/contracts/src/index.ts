@@ -5,3 +5,5 @@ export * from './evidence';
 export * from './attestation';
 export * from './tools';
 export * from './job';
+export * from './queue';
+export * from './allowlist';
