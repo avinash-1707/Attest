@@ -1,0 +1,27 @@
+# Foundational docs: local canonical reference, not committed
+docs/foundational/
+
+# Local agent/tooling state
+.claude/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
