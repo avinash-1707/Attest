@@ -24,6 +24,7 @@
 - **Validate unknown external input at boundaries before trusting it.** Every value crossing a process/trust boundary is parsed against a `packages/contracts` zod schema first (`[tech-arch §2.2]`). No "we'll validate later."
 - Derive types from zod schemas (`z.infer`) - never hand-maintain a type alongside its schema.
 - No engine-specific types (Puppeteer, Stagehand, model SDK) outside their adapter implementation (`[tech-arch §1.2, §3]`).
+- **Extensionless imports.** `moduleResolution: "bundler"` (root `tsconfig.base.json`); relative imports carry no `.js`/`.ts` extension. Runnable apps execute via a bundler/tsx, not raw `node dist`, so resolution stays bundler-style end to end.
 
 ## Packages & boundaries
 

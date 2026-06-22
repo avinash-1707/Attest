@@ -1,3 +1,5 @@
 // packages/contracts: single source of truth for every shape crossing a boundary [arch §8].
-// Attestation schema, tool I/O, API DTOs, and the job payload land here (Next up: step 2).
-export {};
+// The Attestation contract lands first and alone; tool I/O + job payload follow [tech-arch §2.1].
+export * from './enums';
+export * from './evidence';
+export * from './attestation';
