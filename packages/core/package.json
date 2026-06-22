@@ -10,6 +10,26 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./adapters/browser/puppeteer": {
+      "types": "./dist/adapters/browser/puppeteer.d.ts",
+      "default": "./dist/adapters/browser/puppeteer.js"
+    },
+    "./adapters/model/openrouter": {
+      "types": "./dist/adapters/model/openrouter.d.ts",
+      "default": "./dist/adapters/model/openrouter.js"
+    },
+    "./adapters/resolution/dom-ladder": {
+      "types": "./dist/adapters/resolution/dom-ladder.d.ts",
+      "default": "./dist/adapters/resolution/dom-ladder.js"
+    },
+    "./adapters/storage/disk": {
+      "types": "./dist/adapters/storage/disk.d.ts",
+      "default": "./dist/adapters/storage/disk.js"
+    },
+    "./adapters/storage/s3": {
+      "types": "./dist/adapters/storage/s3.d.ts",
+      "default": "./dist/adapters/storage/s3.js"
     }
   },
   "scripts": {
