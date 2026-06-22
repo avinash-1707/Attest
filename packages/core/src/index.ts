@@ -6,3 +6,5 @@ export * from './executor/index';
 export * from './judge/index';
 export * from './evidence/index';
 export * from './adapters/index';
+export * from './assemble';
+export * from './run';

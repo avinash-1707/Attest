@@ -18,6 +18,7 @@
 - Monorepo scaffold (`[arch §2]`, `[tech-arch §1]`): pnpm workspaces for `packages/{contracts,core,db}`, `apps/{web,dashboard,backend,worker,mcp}`, single `ee` package. Turborepo pipeline (`build`/`dev`/`test`/`lint`/`typecheck`), TS strict + project references, Vitest workspace, Prettier. ESLint `no-restricted-imports` encodes the dependency matrix (`[tech-arch §1.3]`) - verified: `core`→`db` and engine-SDK-in-judge imports both fail lint. `pnpm build` + `pnpm lint` green across all 9 projects. Deps installed by command only; internal links are `workspace:*`. `core` src laid out as `planner/executor/judge/evidence/adapters/{browser,resolution,model}`; apps/ee are placeholders pending framework wiring.
 - `packages/contracts` Attestation contract (`[arch §8]`, `[tech-arch §2]`): `Attestation` zod schema + `z.infer` types, with enums (`runStatus`/`stepStatus`/`source`/`resolvedBy`/`guardId`/`evidenceKind`), evidence ref schemas (`stepEvidence`, `runEvidence`), step + failure dossier. Cross-field rule enforced: `failure` is present iff `status === "failed"`. `schemaVersion` pinned to `"1.0"` literal.
 - `packages/contracts` tool I/O + job payload (`[arch §4.1]`, `[tech-arch §2.1, §3.3]`): `attest`/`assert_outcome`/`verify_flow`/`explain_failure` request+response (all run tools return an `Attestation`; `explain_failure` returns the dossier), `agentRole` enum, `runModelConfig`, and the internal `jobPayload` queue message (carries decrypted `apiKey`/`credentials` backend→worker only). `explore` deferred to V2. 20 round-trip/validation tests green across attestation/tools/job (`[tech-arch §9.1]`).
+- `packages/core` pure engine, fully fake-testable (`[arch §4.1]`, `[tech-arch §3, §4]`): (1) adapter interfaces (browser/resolution/model/storage) as canonical TS + in-memory fakes; (2) five deterministic guards over a `GuardEvidence` bundle with fixed run order + precedence; (3) planner (`goal → Journey`, zod-validated LLM output, `PlanError`); (4) executor + `EvidenceCollector` (drives adapters, re-resolves a miss once, per-step guard eval, DOM snapshot + halt on conclusive failure, captures `resolvedBy`); (5) judge + assembler + `runAttestation` orchestrator (guards decide pass/fail, LLM only authors dossier + goal-relative verdict, env failure → `inconclusive`; `assemble` validates against the contract schema before returning). 28 unit tests green; engine imports no transport/storage/engine SDK.
 
 ## In progress
 
@@ -25,9 +26,10 @@
 
 ## Next up
 
-1. `packages/core` adapter interfaces (browser/resolution/model/storage) per `[tech-arch §3]`, with fake adapters for testing (dir skeleton already scaffolded).
-2. The five deterministic guards (`[tech-arch §4.2]`) with deterministic unit tests over canned evidence.
-3. API DTOs (`[tech-arch §2.1]`): run-create, run-status, evidence-ref resolution, app/key management - to land with the `apps/backend` routes that consume them.
+1. `packages/db`: Drizzle schema (`org`/`app`/`appKey`/`run`/`attestation`/`usageEvent`, every row `org_id`) + tenant-scoped data-access layer + Drizzle Kit migrations (`[arch §5]`, `[tech-arch §10.3]`).
+2. Secrets / `KeyProvider`: env-sourced KEK + AES-256-GCM envelope encrypt/decrypt; encrypted app creds + BYOK key (`[tech-arch §6]`).
+3. Concrete adapters behind the §3 seams: browser (Puppeteer/CDP), resolution (Stagehand), model (OpenRouter), storage (R2/disk).
+4. API DTOs (`[tech-arch §2.1]`): run-create, run-status, evidence-ref resolution, app/key management - to land with the `apps/backend` routes that consume them.
 
 ## Open questions
 

@@ -1,4 +1,4 @@
-import type { EvidenceRef, GuardId } from '@attest/contracts';
+import type { EvidenceRef, GuardId, ResolvedBy } from '@attest/contracts';
 import type { BrowserContext } from '../adapters/browser/index';
 import type { ResolutionAdapter } from '../adapters/resolution/index';
 import type { NavigationResult, ResolvedTarget } from '../adapters/types';
@@ -16,6 +16,7 @@ export interface ExecutedStep {
   guardEvidence: GuardEvidence;
   firedGuardIds: GuardId[];
   conclusiveFailure: boolean;
+  resolvedBy?: ResolvedBy;
   screenshotRef?: EvidenceRef;
   domSnapshotRef?: EvidenceRef;
   error?: string;
@@ -60,6 +61,7 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
     const consoleBefore = deps.evidence.consoleEvents().length;
     const networkBefore = deps.evidence.networkEvents().length;
     let navigation: NavigationResult | undefined;
+    let resolvedBy: ResolvedBy | undefined;
     let error: string | undefined;
 
     try {
@@ -69,11 +71,13 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
           break;
         case 'click': {
           const target = await resolveWithRetry(step.action.intent, deps, retries);
+          resolvedBy = target.resolvedBy;
           await deps.ctx.click(target);
           break;
         }
         case 'type': {
           const target = await resolveWithRetry(step.action.intent, deps, retries);
+          resolvedBy = target.resolvedBy;
           await deps.ctx.type(target, step.action.text);
           break;
         }
@@ -101,6 +105,7 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
       conclusiveFailure,
       screenshotRef,
     };
+    if (resolvedBy !== undefined) executed.resolvedBy = resolvedBy;
     if (conclusiveFailure) executed.domSnapshotRef = await deps.evidence.captureDomSnapshot();
     if (error !== undefined) executed.error = error;
     steps.push(executed);
