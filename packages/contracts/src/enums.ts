@@ -19,6 +19,10 @@ export type Source = z.infer<typeof source>;
 export const resolvedBy = z.enum(['a11y', 'text', 'aria', 'role', 'visual']);
 export type ResolvedBy = z.infer<typeof resolvedBy>;
 
+// Model roles the user picks a model for; per-tenant/app config [tech-arch §3.3, prd §6.4].
+export const agentRole = z.enum(['planner', 'judge', 'resolution']);
+export type AgentRole = z.infer<typeof agentRole>;
+
 // The five deterministic guards, in run order [tech-arch §4.2].
 export const guardId = z.enum([
   'http_status',

@@ -16,7 +16,8 @@
 - Technical docs: `technical/technical-architecture.md` (v1), `project-overview.md`, `code-standards.md`, `ai-workflow-rules.md`, this tracker.
 - Six open implementation questions from `[arch §13]` resolved as provisional MVP defaults in `[tech-arch §7]`.
 - Monorepo scaffold (`[arch §2]`, `[tech-arch §1]`): pnpm workspaces for `packages/{contracts,core,db}`, `apps/{web,dashboard,backend,worker,mcp}`, single `ee` package. Turborepo pipeline (`build`/`dev`/`test`/`lint`/`typecheck`), TS strict + project references, Vitest workspace, Prettier. ESLint `no-restricted-imports` encodes the dependency matrix (`[tech-arch §1.3]`) - verified: `core`→`db` and engine-SDK-in-judge imports both fail lint. `pnpm build` + `pnpm lint` green across all 9 projects. Deps installed by command only; internal links are `workspace:*`. `core` src laid out as `planner/executor/judge/evidence/adapters/{browser,resolution,model}`; apps/ee are placeholders pending framework wiring.
-- `packages/contracts` Attestation contract (`[arch §8]`, `[tech-arch §2]`): `Attestation` zod schema + `z.infer` types, with enums (`runStatus`/`stepStatus`/`source`/`resolvedBy`/`guardId`/`evidenceKind`), evidence ref schemas (`stepEvidence`, `runEvidence`), step + failure dossier. Cross-field rule enforced: `failure` is present iff `status === "failed"`. `schemaVersion` pinned to `"1.0"` literal. 10 round-trip/validation tests green (`[tech-arch §9.1]`). Tool I/O + job payload schemas still pending (next unit).
+- `packages/contracts` Attestation contract (`[arch §8]`, `[tech-arch §2]`): `Attestation` zod schema + `z.infer` types, with enums (`runStatus`/`stepStatus`/`source`/`resolvedBy`/`guardId`/`evidenceKind`), evidence ref schemas (`stepEvidence`, `runEvidence`), step + failure dossier. Cross-field rule enforced: `failure` is present iff `status === "failed"`. `schemaVersion` pinned to `"1.0"` literal.
+- `packages/contracts` tool I/O + job payload (`[arch §4.1]`, `[tech-arch §2.1, §3.3]`): `attest`/`assert_outcome`/`verify_flow`/`explain_failure` request+response (all run tools return an `Attestation`; `explain_failure` returns the dossier), `agentRole` enum, `runModelConfig`, and the internal `jobPayload` queue message (carries decrypted `apiKey`/`credentials` backend→worker only). `explore` deferred to V2. 20 round-trip/validation tests green across attestation/tools/job (`[tech-arch §9.1]`).
 
 ## In progress
 
@@ -24,9 +25,9 @@
 
 ## Next up
 
-1. `packages/contracts`: tool I/O schemas (`attest`/`explain_failure`/`assert_outcome`/`verify_flow`) + the queue job payload, with round-trip tests (`[tech-arch §2.1, §9.1]`).
-2. `packages/core` adapter interfaces (browser/resolution/model/storage) per `[tech-arch §3]`, with fake adapters for testing (dir skeleton already scaffolded).
-3. The five deterministic guards (`[tech-arch §4.2]`) with deterministic unit tests over canned evidence.
+1. `packages/core` adapter interfaces (browser/resolution/model/storage) per `[tech-arch §3]`, with fake adapters for testing (dir skeleton already scaffolded).
+2. The five deterministic guards (`[tech-arch §4.2]`) with deterministic unit tests over canned evidence.
+3. API DTOs (`[tech-arch §2.1]`): run-create, run-status, evidence-ref resolution, app/key management - to land with the `apps/backend` routes that consume them.
 
 ## Open questions
 
@@ -34,6 +35,7 @@
 - (resolved) `ui-context.md` written: clay-shell + flat-data design system, dark-first dual mode, oxblood accent, DM Sans + Berkeley/JetBrains Mono, flat verdict triad.
 - Plan-cache flag (`[tech-arch §7.1]`): keep disabled until real per-run cost data exists - revisit, don't implement early.
 - `resolvedBy` enum mismatch (resolved in code, doc note pending): `[arch §8]` step example shows `"resolvedBy": "url"`, but `[tech-arch §3.2]` defines the authoritative union `a11y|text|aria|role|visual` (no `url`). The contract schema follows §3.2 and makes `resolvedBy` optional (absent for non-element steps like pure navigation). The `[arch §8]` example value is treated as illustrative/stale. Confirm and fix the §8 example on the next contract doc pass.
+- Tool signatures provisional: `assert_outcome` (`{url, outcome}`) and `verify_flow` (`{url, goal, steps[]}`) field shapes are inferred from `[prd §6.1]` intent (the docs give no field-level signature). `attest` (`{goal, url}`) and `explain_failure` (`{runId}`) are doc-backed (`[arch §4.1, §4.2]`). Confirm the two provisional shapes before backend wiring. `jobPayload.credentials` shape (`Record<string,string>`) is likewise provisional pending the app-credential model.
 - (Add new ambiguities here before implementing - `ai-workflow-rules.md`.)
 
 ## Architecture decisions
