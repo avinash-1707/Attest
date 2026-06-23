@@ -19,6 +19,9 @@ export interface AuthDeps {
   secret: string;
   baseURL: string;
   trustedOrigins: string[];
+  // Shared parent domain for cross-subdomain SSO (e.g. ".attest.io"); undefined in local dev keeps the
+  // session cookie host-only. See platform/config.ts cookieDomain [arch §3.1].
+  cookieDomain?: string;
   google?: { clientId: string; clientSecret: string };
 }
 
@@ -28,6 +31,14 @@ export function buildAuth(deps: AuthDeps) {
     secret: deps.secret,
     baseURL: deps.baseURL,
     trustedOrigins: deps.trustedOrigins,
+    // When a parent cookie domain is configured, scope the session cookie to it so web (root domain)
+    // and dashboard (app. subdomain) share one session. secure + sameSite are left to BetterAuth's
+    // defaults: secure derives from the https baseURL in prod, and root<->subdomain is same-site so
+    // the default sameSite=lax already flows the cookie across subdomains. Omitted entirely in dev so
+    // the cookie stays host-only (shared across localhost ports).
+    ...(deps.cookieDomain
+      ? { advanced: { crossSubDomainCookies: { enabled: true, domain: deps.cookieDomain } } }
+      : {}),
     emailAndPassword: { enabled: true, requireEmailVerification: true },
     // OTP verification is how a new email/password account proves its address, and signUp returns no
     // session while unverified. The verify-email step must therefore ESTABLISH the session, or the

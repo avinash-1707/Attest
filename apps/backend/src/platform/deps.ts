@@ -76,6 +76,7 @@ export function createDeps(config: BackendConfig): BackendDeps {
     secret: config.betterAuthSecret,
     baseURL: config.betterAuthUrl,
     trustedOrigins: config.trustedOrigins,
+    cookieDomain: config.cookieDomain,
     google: config.google,
   });
 

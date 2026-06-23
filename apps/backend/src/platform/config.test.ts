@@ -22,6 +22,14 @@ describe('loadConfig', () => {
     expect(cfg.modelDefaults.resolution).toMatch(/.+/);
     expect(cfg.google).toBeUndefined();
     expect(cfg.trustedOrigins).toEqual([]);
+    expect(cfg.cookieDomain).toBeUndefined();
+  });
+
+  it('reads COOKIE_DOMAIN when set (cross-subdomain SSO) and leaves it undefined otherwise', () => {
+    expect(loadConfig({ ...full, COOKIE_DOMAIN: '.attest.io' } as NodeJS.ProcessEnv).cookieDomain).toBe(
+      '.attest.io',
+    );
+    expect(loadConfig(full as NodeJS.ProcessEnv).cookieDomain).toBeUndefined();
   });
 
   it('selects the s3 evidence backend with its bucket + endpoint', () => {

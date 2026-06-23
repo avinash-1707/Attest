@@ -14,6 +14,11 @@ const base = z.object({
   kekId: z.string().min(1).default('env'),
   betterAuthSecret: z.string().min(1),
   betterAuthUrl: z.string().min(1),
+  // Parent domain the session cookie is scoped to, for cross-subdomain SSO (web on the root domain,
+  // dashboard on the app. subdomain) [arch §3.1]. Set to the shared parent in prod (e.g. ".attest.io");
+  // leave UNSET locally so the cookie stays host-only (localhost has no shared parent, and a "."-domain
+  // would be rejected there). When set, BetterAuth's crossSubDomainCookies is enabled with this domain.
+  cookieDomain: z.string().min(1).optional(),
   // Allowlist for the browser origins that talk to the backend: apps/web (auth) + apps/dashboard.
   // This ONE list is load-bearing three ways - CORS allow-origin (app.ts), the CSRF Origin guard
   // (csrf.ts), AND BetterAuth's OAuth callbackURL validation (the open-redirect gate). Never put a
@@ -61,6 +66,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     kekId: env.ATTEST_KEK_ID,
     betterAuthSecret: env.BETTER_AUTH_SECRET,
     betterAuthUrl: env.BETTER_AUTH_URL,
+    cookieDomain: env.COOKIE_DOMAIN,
     trustedOrigins: env.TRUSTED_ORIGINS
       ? env.TRUSTED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
       : undefined,
