@@ -189,3 +189,65 @@ describe('evidence idempotency [tech-arch §5.4]', () => {
     expect(await a.evidence.listForRun(run.id)).toHaveLength(2);
   });
 });
+
+describe('credit ledger [tech-arch §13.4]', () => {
+  it('balance is 0 for an org with no entries, and sums signed entries', async () => {
+    const a = dao.forOrg('org_a');
+    expect(await a.credits.balance()).toBe(0);
+
+    await a.credits.grant({ amount: 1000, idempotencyKey: 'starter:org_a', reason: 'starter' });
+    await a.credits.grant({ amount: 500, idempotencyKey: 'wh_pack_1', reason: 'pack_purchase', kind: 'purchase' });
+    expect(await a.credits.balance()).toBe(1500);
+  });
+
+  it('grant is idempotent on idempotencyKey (a replayed webhook re-grants to a no-op)', async () => {
+    const a = dao.forOrg('org_a');
+    await a.credits.grant({ amount: 1000, idempotencyKey: 'wh_1', reason: 'monthly_grant' });
+    await a.credits.grant({ amount: 1000, idempotencyKey: 'wh_1', reason: 'monthly_grant' });
+    expect(await a.credits.balance()).toBe(1000);
+    expect(await a.credits.list()).toHaveLength(1);
+  });
+
+  it('debitForRun writes a usage event + a debit, idempotent on runId (re-delivery is a no-op)', async () => {
+    const a = dao.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    const run = await a.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' });
+    await a.credits.grant({ amount: 100, idempotencyKey: 'starter:org_a', reason: 'starter' });
+
+    const charge = {
+      runId: run.id,
+      appId: app.id,
+      credits: 7,
+      usage: { browserMinutes: 1.5, steps: 3, modelCostUsd: 0.08 },
+    };
+    await a.credits.debitForRun(charge);
+    await a.credits.debitForRun(charge); // re-delivery
+
+    expect(await a.credits.balance()).toBe(93);
+    const usage = await a.usage.listSince(new Date(0));
+    expect(usage).toHaveLength(1);
+    expect(usage[0]?.steps).toBe(3);
+  });
+
+  it('a zero-credit charge records usage but no debit row', async () => {
+    const a = dao.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    const run = await a.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' });
+
+    await a.credits.debitForRun({
+      runId: run.id,
+      appId: app.id,
+      credits: 0,
+      usage: { browserMinutes: 1, steps: 2, modelCostUsd: 0 },
+    });
+    expect(await a.credits.balance()).toBe(0);
+    expect(await a.credits.list()).toHaveLength(0);
+    expect(await a.usage.listSince(new Date(0))).toHaveLength(1);
+  });
+
+  it('a ledger is tenant-isolated: another org never sees the balance', async () => {
+    const a = dao.forOrg('org_a');
+    await a.credits.grant({ amount: 1000, idempotencyKey: 'starter:org_a', reason: 'starter' });
+    expect(await dao.forOrg('org_b').credits.balance()).toBe(0);
+  });
+});

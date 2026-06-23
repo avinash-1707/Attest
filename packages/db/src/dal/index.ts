@@ -21,3 +21,4 @@ export type { EvidenceRefRow, NewEvidence } from './evidence.repo';
 export type { UsageEvent } from './usage.repo';
 export type { ModelKey } from './model-key.repo';
 export type { AppCredential } from './app-credential.repo';
+export type { CreditLedger } from './credit-ledger.repo';
