@@ -2,3 +2,4 @@
 // [tech-arch §13]. Absent from the OSS build; loaded by the apps via a guarded dynamic import.
 export { defaultPricing, creditsForRun, type BillingPricing } from './pricing';
 export { createBillingMeter } from './meter';
+export { createBillingGate } from './gate';

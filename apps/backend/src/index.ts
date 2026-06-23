@@ -6,7 +6,7 @@ import { buildApp } from './app';
 // Mirrors apps/worker/index.ts: server -> queue -> redis -> db on shutdown.
 async function main(): Promise<void> {
   const config = loadConfig();
-  const deps = createDeps(config);
+  const deps = await createDeps(config);
   const app = buildApp(deps);
 
   let closing = false;

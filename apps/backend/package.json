@@ -24,5 +24,8 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.0"
+  },
+  "optionalDependencies": {
+    "@attest/ee": "workspace:*"
   }
 }

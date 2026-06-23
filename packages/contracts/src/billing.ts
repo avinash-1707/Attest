@@ -23,13 +23,23 @@ export interface BillingMeter {
   recordAndDebit(input: RunMeterInput): Promise<void>;
 }
 
-// Pre-flight cost estimate for the enqueue gate, in credits.
-export interface GateEstimate {
-  credits: number;
+// Decides whether an org may enqueue a run. Throws InsufficientCreditsError to block, or returns to
+// allow. The pre-flight estimate is ee-internal (flat per-run, errs high) so the OSS caller passes no
+// pricing. The OSS no-op impl always allows.
+export interface BillingGate {
+  assertCanEnqueue(orgId: string): Promise<void>;
 }
 
-// Decides whether an org may enqueue a run. Throws a typed insufficient-credits error to block, or
-// returns to allow. The OSS no-op impl always allows.
-export interface BillingGate {
-  assertCanEnqueue(orgId: string, estimate: GateEstimate): Promise<void>;
+// Thrown by the ee/ gate when an org's balance can't cover the estimated run cost. Defined here (not in
+// the backend) so ee/ throws it without depending on the backend; the backend error handler maps it to
+// a 402 with this code [tech-arch §13.4].
+export class InsufficientCreditsError extends Error {
+  readonly code = 'insufficient_credits';
+  constructor(
+    readonly balance: number,
+    readonly required: number,
+  ) {
+    super('Insufficient credits to start a run');
+    this.name = 'InsufficientCreditsError';
+  }
 }

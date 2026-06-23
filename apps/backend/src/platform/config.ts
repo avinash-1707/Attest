@@ -36,6 +36,11 @@ const base = z.object({
     judge: z.string().min(1).default('anthropic/claude-haiku-4-5'),
     resolution: z.string().min(1).default('anthropic/claude-haiku-4-5'),
   }),
+  // Hosted-tier credit gating: when enabled, enqueue checks the org's balance via ee/billing and 402s
+  // an org that can't cover a run. OFF for the OSS build (self-hosters run unlimited) [tech-arch §13].
+  // requireBilling makes a hosted boot fail closed if @attest/ee is absent, rather than run ungated.
+  billingEnabled: z.boolean().default(false),
+  requireBilling: z.boolean().default(false),
 });
 
 // Evidence backend, selected once at start [tech-arch §8], same shape the worker uses so the read
@@ -81,6 +86,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       judge: env.MODEL_DEFAULT_JUDGE,
       resolution: env.MODEL_DEFAULT_RESOLUTION,
     },
+    billingEnabled: env.BILLING_ENABLED === 'true',
+    requireBilling: env.REQUIRE_BILLING === 'true',
   };
 
   if ((env.EVIDENCE_BACKEND ?? 'disk') === 's3') {

@@ -28,6 +28,7 @@ export function registerRunRoutes(app: FastifyInstance, deps: BackendDeps): void
         queue: deps.queue,
         modelDefaults: deps.modelDefaults,
         hostedApiKey: deps.config.openrouterApiKey,
+        gate: deps.gate,
       },
     );
 

@@ -10,8 +10,9 @@ import {
   type DataAccess,
   type SecretCipher,
 } from '@attest/db';
-import { RUN_QUEUE, type AgentRole } from '@attest/contracts';
+import { RUN_QUEUE, type AgentRole, type BillingGate } from '@attest/contracts';
 import type { EvidenceStore } from '@attest/core';
+import { loadBillingGate } from '../billing/load';
 import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
 import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
 import type { BackendConfig } from './config';
@@ -48,10 +49,12 @@ export interface BackendDeps {
   auth: Auth;
   store: EvidenceStore;
   modelDefaults: Record<AgentRole, string>;
+  // Credit gate at enqueue; no-op in the OSS build [tech-arch §13.4].
+  gate: BillingGate;
   closeDb: () => Promise<void>;
 }
 
-export function createDeps(config: BackendConfig): BackendDeps {
+export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
   const db = getDb(config.databaseUrl);
   const dal = createDataAccess(db);
 
@@ -82,5 +85,12 @@ export function createDeps(config: BackendConfig): BackendDeps {
 
   const store = createStore(config);
 
-  return { config, dal, cipher, queue, redis, auth, store, modelDefaults: config.modelDefaults, closeDb };
+  // No-op unless billing is enabled (OSS build never gates); fail-closed if hosted and ee is absent.
+  const gate = await loadBillingGate({
+    enabled: config.billingEnabled,
+    requireBilling: config.requireBilling,
+    dal,
+  });
+
+  return { config, dal, cipher, queue, redis, auth, store, modelDefaults: config.modelDefaults, gate, closeDb };
 }

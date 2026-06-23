@@ -7,6 +7,7 @@ import {
   jobPayload,
   type AgentRole,
   type Source,
+  type BillingGate,
 } from '@attest/contracts';
 import type { DataAccess, OrgScope, SecretCipher, OrgCipher } from '@attest/db';
 import { ApiError } from '../platform/errors';
@@ -30,6 +31,8 @@ export interface EnqueueDeps {
   modelDefaults: Record<AgentRole, string>;
   // Hosted-default OpenRouter key, used when an org has no BYOK model key [arch §7.2].
   hostedApiKey?: string;
+  // Credit gate; no-op in the OSS build, throws InsufficientCreditsError when hosted + over budget.
+  gate: BillingGate;
 }
 
 export async function enqueueRun(
@@ -47,9 +50,13 @@ export async function enqueueRun(
     throw new ApiError(400, 'url_not_allowed', 'Target URL is not in the app allowlist');
   }
 
+  // Credit gate: a hosted org must be able to cover the run before any secret is opened or row written
+  // [tech-arch §13.4]. No-op in the OSS build. Throws InsufficientCreditsError -> mapped to 402.
+  await deps.gate.assertCanEnqueue(ctx.orgId);
+
   // Open secrets server-side; plaintext lives only in these locals + the payload [arch §10, §6.1].
   const cipher = deps.cipher.for(ctx.orgId);
-  const apiKey = await resolveApiKey(org, cipher, deps.hostedApiKey);
+  const { apiKey, byok } = await resolveApiKey(org, cipher, deps.hostedApiKey);
   const credentials = await resolveCredentials(org, cipher, input.appId);
 
   const models = deps.modelDefaults;
@@ -72,6 +79,7 @@ export async function enqueueRun(
     url: input.url,
     modelConfig: { models, apiKey },
     credentials: Object.keys(credentials).length > 0 ? credentials : undefined,
+    byok,
   });
 
   try {
@@ -97,10 +105,14 @@ export async function enqueueRun(
 
 // BYOK key if the org has one, else the hosted default. The model id (which model) is separate from
 // the key (whose budget) and comes from modelDefaults.
-async function resolveApiKey(org: OrgScope, cipher: OrgCipher, hostedApiKey?: string): Promise<string> {
+async function resolveApiKey(
+  org: OrgScope,
+  cipher: OrgCipher,
+  hostedApiKey?: string,
+): Promise<{ apiKey: string; byok: boolean }> {
   const [key] = await org.modelKeys.list();
-  if (key) return cipher.open(key.ciphertext);
-  if (hostedApiKey) return hostedApiKey;
+  if (key) return { apiKey: await cipher.open(key.ciphertext), byok: true };
+  if (hostedApiKey) return { apiKey: hostedApiKey, byok: false };
   throw new ApiError(400, 'model_key_required', 'No model key configured; add a BYOK key or set OPENROUTER_API_KEY');
 }
 

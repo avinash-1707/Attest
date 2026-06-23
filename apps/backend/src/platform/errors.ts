@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { InsufficientCreditsError } from '@attest/contracts';
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 // Typed client-facing error [tech-arch §5.1]. A thrown ApiError is the only way a route surfaces a
@@ -27,6 +28,13 @@ export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error: FastifyError, req: FastifyRequest, reply: FastifyReply) => {
     if (error instanceof ApiError) {
       reply.status(error.statusCode).send({ code: error.code, message: error.message } satisfies ErrorBody);
+      return;
+    }
+
+    // The ee/ credit gate throws this from enqueue; map to 402 Payment Required so the MCP + dashboard
+    // doors get a distinct buy-credits signal (not conflated with the 400 config errors) [tech-arch §13.4].
+    if (error instanceof InsufficientCreditsError) {
+      reply.status(402).send({ code: error.code, message: error.message } satisfies ErrorBody);
       return;
     }
 

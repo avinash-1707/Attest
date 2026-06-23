@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildApp } from './app';
 import type { BackendDeps } from './platform/deps';
+import { allowAllGate } from './billing/load';
 
 const MODELS = { planner: 'm/p', judge: 'm/j', resolution: 'm/r' };
 
@@ -32,6 +33,7 @@ function makeDeps(opts: { appIds?: string[] } = {}): BackendDeps {
     redis: {},
     auth: { handler: async () => new Response(null), api: { getSession } },
     modelDefaults: MODELS,
+    gate: allowAllGate,
     closeDb: async () => undefined,
   } as unknown as BackendDeps;
 }

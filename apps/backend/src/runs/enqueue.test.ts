@@ -1,8 +1,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Queue } from 'bullmq';
-import { MAX_RUN_ATTEMPTS, RUN_BACKOFF_MS, RUN_JOB, jobPayload, type JobPayload } from '@attest/contracts';
+import {
+  MAX_RUN_ATTEMPTS,
+  RUN_BACKOFF_MS,
+  RUN_JOB,
+  jobPayload,
+  InsufficientCreditsError,
+  type JobPayload,
+  type BillingGate,
+} from '@attest/contracts';
 import type { DataAccess, SecretCipher } from '@attest/db';
 import { enqueueRun, type EnqueueDeps } from './enqueue';
+import { allowAllGate } from '../billing/load';
 
 const MODELS = { planner: 'm/p', judge: 'm/j', resolution: 'm/r' };
 
@@ -12,6 +21,7 @@ interface Opts {
   creds?: Array<{ name: string; ciphertext: string }>;
   addImpl?: () => Promise<unknown>;
   hostedApiKey?: string;
+  gate?: BillingGate;
 }
 
 function setup(opts: Opts) {
@@ -41,6 +51,7 @@ function setup(opts: Opts) {
     queue: { add } as unknown as Queue,
     modelDefaults: MODELS,
     hostedApiKey: opts.hostedApiKey,
+    gate: opts.gate ?? allowAllGate,
   };
 
   return { deps, add, failPermanently, runsCreate };
@@ -99,10 +110,29 @@ describe('enqueueRun', () => {
     expect(add.mock.calls[0]![1].credentials).toBeUndefined();
   });
 
-  it('prefers a BYOK model key over the hosted default', async () => {
+  it('prefers a BYOK model key over the hosted default and flags byok on the payload', async () => {
     const { deps, add } = setup({ modelKeys: [{ ciphertext: 'byok' }], hostedApiKey: 'sk-hosted' });
     await enqueueRun({ orgId: 'org_1' }, input, deps);
     expect(add.mock.calls[0]![1].modelConfig.apiKey).toBe('opened:byok');
+    expect(add.mock.calls[0]![1].byok).toBe(true);
+  });
+
+  it('flags byok:false on a hosted-key run', async () => {
+    const { deps, add } = setup({ hostedApiKey: 'sk-hosted' });
+    await enqueueRun({ orgId: 'org_1' }, input, deps);
+    expect(add.mock.calls[0]![1].byok).toBe(false);
+  });
+
+  it('blocks enqueue when the credit gate denies, before any row or job [tech-arch §13.4]', async () => {
+    const gate: BillingGate = {
+      async assertCanEnqueue() {
+        throw new InsufficientCreditsError(0, 10);
+      },
+    };
+    const { deps, add, runsCreate } = setup({ hostedApiKey: 'sk-hosted', gate });
+    await expect(enqueueRun({ orgId: 'org_1' }, input, deps)).rejects.toBeInstanceOf(InsufficientCreditsError);
+    expect(runsCreate).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
   });
 
   it('denies a URL outside the app allowlist and never enqueues (invariant 7)', async () => {
