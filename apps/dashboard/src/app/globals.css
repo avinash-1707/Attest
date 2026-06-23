@@ -1,18 +1,334 @@
 @import 'tailwindcss';
 
-/*
-  Minimal base only. The full design-token system (clay-shell + flat-data, dark-first dual mode,
-  oxblood accent, DM Sans + mono, verdict triad) is specified in docs/technical/ui-context.md §3 and
-  is built out in the UI slice (canvas). This wiring slice ships just enough for a legible proof page.
-*/
+/* ============================================================
+   ATTEST DESIGN TOKENS
+   Full system per docs/technical/ui-context.md
+   Dark-first. Two surface types only: clay shell + flat data.
+   No hardcoded hex in components — tokens here, consumed there.
+   ============================================================ */
+
+/* ---- Tailwind v4 @theme: exposes semantic tokens as Tailwind utilities ---- */
+@theme inline {
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-border: var(--surface-border);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-text-on-accent: var(--text-on-accent);
+
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-pressed: var(--accent-pressed);
+
+  --color-data-surface: var(--data-surface);
+  --color-data-surface-alt: var(--data-surface-alt);
+  --color-data-border: var(--data-border);
+  --color-data-text: var(--data-text);
+  --color-data-text-muted: var(--data-text-muted);
+
+  --color-verdict-pass: var(--color-pass);
+  --color-verdict-pass-text: var(--color-pass-text);
+  --color-verdict-fail: var(--color-fail);
+  --color-verdict-fail-text: var(--color-fail-text);
+  --color-verdict-warn: var(--color-warn);
+  --color-verdict-warn-text: var(--color-warn-text);
+
+  --font-family-sans: var(--font-sans);
+  --font-family-mono: var(--font-mono);
+}
+
+/* ---- Primitive scale ---- */
 :root {
-  --surface-base: #16130f;
-  --text-primary: #f2ede6;
-  --accent-primary: #7a2b22;
+  /* Fonts - populated by next/font CSS vars injected on <html> */
+  --font-sans: var(--font-dm-sans), 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Type scale */
+  --text-2xs: 0.625rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.375rem;
+
+  /* Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.10em;
+
+  /* Spacing (4px base unit) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-0: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-clay-sm: 12px;
+  --radius-clay-md: 16px;
+  --radius-clay-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Oxblood / rust primitives */
+  --oxblood-950: #2E0E0A;
+  --oxblood-900: #3E1511;
+  --oxblood-800: #5C1F19;
+  --oxblood-700: #7A2820;
+  --oxblood-600: #8B3028;
+  --oxblood-500: #A83C33;
+  --oxblood-400: #C4574D;
+  --oxblood-300: #D97A72;
+  --oxblood-200: #EDAAA4;
+  --oxblood-100: #F5D8D5;
+  --oxblood-050: #FAF0EE;
+
+  /* Dark-mode warm gray primitives */
+  --gray-dark-950: #110D0B;
+  --gray-dark-900: #1A1614;
+  --gray-dark-850: #221C19;
+  --gray-dark-800: #2C2420;
+  --gray-dark-700: #3D3330;
+  --gray-dark-600: #564B47;
+  --gray-dark-500: #7A6E6A;
+  --gray-dark-400: #A39790;
+  --gray-dark-300: #C8BDB8;
+  --gray-dark-200: #E2D9D4;
+  --gray-dark-100: #F0EAE6;
+  --gray-dark-050: #FAF5F2;
+
+  /* Light-mode warm gray primitives */
+  --gray-light-050: #110D0B;
+  --gray-light-100: #2C2420;
+  --gray-light-200: #4A3F3B;
+  --gray-light-300: #6B5E59;
+  --gray-light-400: #8C7E79;
+  --gray-light-500: #B0A49F;
+  --gray-light-600: #CFC6C2;
+  --gray-light-700: #E0D8D4;
+  --gray-light-800: #EDE6E2;
+  --gray-light-850: #F5F0EE;
+  --gray-light-900: #FDFAF9;
+  --gray-light-950: #FFFFFF;
+}
+
+/* ---- Dark mode semantic tokens (default) ---- */
+:root,
+[data-theme='dark'] {
+  /* Clay surfaces */
+  --surface-base: #1A1614;
+  --surface-raised: #221C19;
+  --surface-elevated: #2C2420;
+  --surface-border: #3D3330;
+
+  /* Text */
+  --text-primary: #E2D9D4;
+  --text-secondary: #C8BDB8;
+  --text-muted: #A39790;
+  --text-placeholder: #7A6E6A;
+  --text-on-accent: #FAF5F2;
+
+  /* Accent */
+  --accent-primary: #8B3028;
+  --accent-hover: #7A2820;
+  --accent-pressed: #5C1F19;
+
+  /* Verdict triad */
+  --color-pass: #2D7A47;
+  --color-pass-text: #4DB870;
+  --color-fail: #A02820;
+  --color-fail-text: #E05C4B;
+  --color-warn: #7A4A08;
+  --color-warn-text: #C8841A;
+
+  /* Flat data surfaces */
+  --data-surface: #110D0B;
+  --data-surface-alt: #1A1614;
+  --data-border: #3D3330;
+  --data-text: #E2D9D4;
+  --data-text-muted: #A39790;
+
+  /* Clay shadows - low-contrast, warm-toned for dark mode */
+  --clay-shadow:
+    -1px -1px 3px 0px rgba(255, 230, 220, 0.04),
+    2px 2px 6px 0px rgba(0, 0, 0, 0.35),
+    inset 1px 1px 1px 0px rgba(255, 220, 200, 0.06);
+
+  --clay-shadow-hover:
+    -1px -1px 4px 0px rgba(255, 230, 220, 0.06),
+    3px 3px 9px 0px rgba(0, 0, 0, 0.40),
+    inset 1px 1px 1px 0px rgba(255, 220, 200, 0.07);
+
+  --clay-shadow-pressed:
+    inset 1px 1px 4px 0px rgba(0, 0, 0, 0.28),
+    inset -1px -1px 2px 0px rgba(255, 220, 200, 0.04);
+
+  --clay-shadow-accent:
+    -1px -1px 3px 0px rgba(255, 180, 160, 0.06),
+    2px 2px 6px 0px rgba(30, 5, 3, 0.45),
+    inset 1px 1px 1px 0px rgba(255, 160, 140, 0.10);
+}
+
+/* ---- Light mode semantic tokens ---- */
+[data-theme='light'] {
+  /* Clay surfaces */
+  --surface-base: #F5F0EE;
+  --surface-raised: #FDFAF9;
+  --surface-elevated: #EDE6E2;
+  --surface-border: #CFC6C2;
+
+  /* Text */
+  --text-primary: #2C2420;
+  --text-secondary: #4A3F3B;
+  --text-muted: #6B5E59;
+  --text-placeholder: #8C7E79;
+  --text-on-accent: #FAF5F2;
+
+  /* Accent */
+  --accent-primary: #8B3028;
+  --accent-hover: #A83C33;
+  --accent-pressed: #7A2820;
+
+  /* Verdict triad */
+  --color-pass: #D4EDDF;
+  --color-pass-text: #1A5E33;
+  --color-fail: #FADADD;
+  --color-fail-text: #8B1F18;
+  --color-warn: #FEF0D4;
+  --color-warn-text: #7A4A08;
+
+  /* Flat data surfaces */
+  --data-surface: #FFFFFF;
+  --data-surface-alt: #FAF5F2;
+  --data-border: #CFC6C2;
+  --data-text: #2C2420;
+  --data-text-muted: #6B5E59;
+
+  /* Clay shadows - more pronounced for light mode */
+  --clay-shadow:
+    -2px -2px 5px 0px rgba(255, 255, 255, 0.80),
+    3px 3px 8px 0px rgba(60, 30, 20, 0.14),
+    inset 1px 1px 2px 0px rgba(255, 255, 255, 0.60);
+
+  --clay-shadow-hover:
+    -3px -3px 7px 0px rgba(255, 255, 255, 0.85),
+    4px 4px 11px 0px rgba(60, 30, 20, 0.18),
+    inset 1px 1px 2px 0px rgba(255, 255, 255, 0.65);
+
+  --clay-shadow-pressed:
+    inset 2px 2px 5px 0px rgba(60, 30, 20, 0.16),
+    inset -1px -1px 2px 0px rgba(255, 255, 255, 0.50);
+
+  --clay-shadow-accent:
+    -1px -1px 3px 0px rgba(255, 180, 160, 0.08),
+    2px 2px 7px 0px rgba(40, 10, 5, 0.30),
+    inset 1px 1px 2px 0px rgba(255, 160, 140, 0.12);
+}
+
+/* ---- Elevation tokens (alias to current theme's clay-shadow) ---- */
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  --elevation-clay-resting: var(--clay-shadow);
+  --elevation-clay-hover: var(--clay-shadow-hover);
+  --elevation-clay-pressed: var(--clay-shadow-pressed);
+  --elevation-flat: none;
+}
+
+/* ============================================================
+   BASE / RESET STYLES
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--surface-base);
+  background-color: var(--surface-base);
   color: var(--text-primary);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  min-height: 100dvh;
+}
+
+/* ---- Focus ring system ---- */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+/* ---- Interactive clay element motion ---- */
+.clay-interactive {
+  transition:
+    box-shadow 80ms ease-out,
+    background-color 80ms ease-out,
+    transform 80ms ease-out;
+}
+
+.clay-interactive:active {
+  transform: translateY(1px);
+  box-shadow: var(--clay-shadow-pressed);
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ---- State transition utility ---- */
+.transition-state {
+  transition: opacity 150ms ease-out;
+}
+
+/* ---- Spinner keyframe ---- */
+@keyframes attest-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Scrollbar styling (dark mode) ---- */
+:root,
+[data-theme='dark'] {
+  scrollbar-color: var(--surface-border) var(--surface-base);
+  scrollbar-width: thin;
+}
+
+[data-theme='light'] {
+  scrollbar-color: var(--surface-border) var(--surface-base);
+  scrollbar-width: thin;
 }
