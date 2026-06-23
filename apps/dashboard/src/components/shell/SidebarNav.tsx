@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/runs', label: 'Runs', icon: '▷' },
   { href: '/apps', label: 'Apps', icon: '⬡' },
   { href: '/keys', label: 'API Keys', icon: '⌗' },
+  { href: '/model-keys', label: 'Model Keys', icon: '⊞' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
