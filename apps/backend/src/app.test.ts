@@ -25,7 +25,7 @@ function makeDeps(opts: { appIds?: string[] } = {}): BackendDeps {
   };
 
   return {
-    config: { openrouterApiKey: 'sk-hosted' },
+    config: { openrouterApiKey: 'sk-hosted', trustedOrigins: ['https://dash.test'] },
     dal: { forOrg: () => org, resolveServiceKey },
     cipher: { for: () => ({ seal: async (s: string) => s, open: async (s: string) => s }) },
     queue: { add },
@@ -129,6 +129,69 @@ describe('POST /runs', () => {
     const res = await app.inject({ method: 'GET', url: '/health' });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ status: 'ok' });
+    await app.close();
+  });
+});
+
+describe('CSRF guard (cookie/session door)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const cookie = 'better-auth.session_token=abc';
+
+  it('allows a cookie-authed state-changing request from a trusted Origin', async () => {
+    const app = buildApp(makeDeps());
+    getSession.mockResolvedValueOnce({ session: { activeOrganizationId: 'org_1' }, user: { id: 'u1' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/runs',
+      headers: { cookie, origin: 'https://dash.test' },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(202);
+    expect(add).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
+
+  it('rejects a cookie-authed state-changing request with no Origin, before auth or enqueue', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({ method: 'POST', url: '/runs', headers: { cookie }, payload: body });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe('csrf_origin_rejected');
+    expect(getSession).not.toHaveBeenCalled();
+    expect(add).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('rejects a cookie-authed request from an untrusted Origin', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({
+      method: 'POST',
+      url: '/runs',
+      headers: { cookie, origin: 'https://evil.test' },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe('csrf_origin_rejected');
+    expect(add).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('does not guard the Bearer (MCP) door even with a cookie and bad Origin', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({
+      method: 'POST',
+      url: '/runs',
+      headers: { cookie, origin: 'https://evil.test', authorization: 'Bearer ak_live_secret' },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(202);
+    await app.close();
+  });
+
+  it('does not guard a safe (GET) method', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({ method: 'GET', url: '/health', headers: { cookie, origin: 'https://evil.test' } });
+    expect(res.statusCode).toBe(200);
     await app.close();
   });
 });

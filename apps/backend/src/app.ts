@@ -1,7 +1,9 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import { toNodeHandler } from 'better-auth/node';
 import type { BackendDeps } from './deps';
 import { registerErrorHandler } from './errors';
+import { registerCsrfGuard } from './csrf';
 import { registerRunRoutes } from './routes/runs';
 import { registerReadRoutes } from './routes/reads';
 import { registerEvidenceRoutes } from './routes/evidence';
@@ -15,6 +17,16 @@ export function buildApp(deps: BackendDeps): FastifyInstance {
   const app = Fastify({ logger: { redact: ['req.headers.authorization', 'req.headers.cookie'] } });
 
   registerErrorHandler(app);
+
+  // CORS for the cross-origin dashboard: only trusted origins, with credentials so the session cookie
+  // is sent/accepted. An empty allowlist denies all cross-origin requests (fail closed). The matching
+  // CSRF guard below covers state-changing cookie requests; together they gate the session door.
+  app.register(cors, {
+    origin: deps.config.trustedOrigins.length > 0 ? deps.config.trustedOrigins : false,
+    credentials: true,
+  });
+
+  registerCsrfGuard(app, { trustedOrigins: deps.config.trustedOrigins });
 
   app.get('/health', async () => ({ status: 'ok' }));
 

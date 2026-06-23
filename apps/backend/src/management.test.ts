@@ -64,7 +64,7 @@ function makeDeps(): BackendDeps {
   };
 
   return {
-    config: {},
+    config: { trustedOrigins: ['https://dash.test'] },
     dal: {
       forOrg: () => org,
       resolveServiceKey: vi.fn(async () => ({ key: { id: 'k1', orgId: 'org_1' }, appIds: ['app_1'] })),

@@ -31,7 +31,7 @@ export function generateServiceKey(): { key: string; prefix: string } {
   return { key, prefix: key.slice(0, 12) };
 }
 
-function bearerToken(req: FastifyRequest): string | undefined {
+export function bearerToken(req: FastifyRequest): string | undefined {
   const header = req.headers.authorization;
   if (!header) return undefined;
   const [scheme, token] = header.split(' ');
