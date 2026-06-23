@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+/*
+  Minimal base only. The full design-token system (clay-shell + flat-data, dark-first dual mode,
+  oxblood accent, DM Sans + mono, verdict triad) is specified in docs/technical/ui-context.md §3 and
+  is built out in the UI slice (canvas). This wiring slice ships just enough for a legible proof page.
+*/
+:root {
+  --surface-base: #16130f;
+  --text-primary: #f2ede6;
+  --accent-primary: #7a2b22;
+}
+
+body {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
