@@ -67,10 +67,12 @@ describe('tenant isolation [arch §5.2, invariant 3]', () => {
     expect(await b.runs.list()).toHaveLength(0);
     expect(await b.attestations.getByRun(run.id)).toBeUndefined();
     expect(await b.evidence.get(ev.id)).toBeUndefined();
+    expect(await b.evidence.getByStorageKey('org_a/app/ev1.png')).toBeUndefined();
 
     expect(await a.apps.list()).toHaveLength(1);
     expect((await a.attestations.getByRun(run.id))?.status).toBe('passed');
     expect((await a.evidence.get(ev.id))?.id).toBe(ev.id);
+    expect((await a.evidence.getByStorageKey('org_a/app/ev1.png'))?.id).toBe(ev.id);
   });
 
   it('refuses to create a run against an app outside the org', async () => {

@@ -43,6 +43,16 @@ export function evidenceRepo(db: Db, orgId: string) {
       return row;
     },
 
+    // Resolves the read API's opaque ref (the attestation carries the storageKey as its ref) to its
+    // row, org-scoped so a foreign ref returns undefined [arch §8 G5, §5.2, invariant 3].
+    async getByStorageKey(storageKey: string): Promise<EvidenceRefRow | undefined> {
+      const [row] = await db
+        .select()
+        .from(evidenceRef)
+        .where(and(eq(evidenceRef.orgId, orgId), eq(evidenceRef.storageKey, storageKey)));
+      return row;
+    },
+
     async listForRun(runId: string): Promise<EvidenceRefRow[]> {
       return db
         .select()
