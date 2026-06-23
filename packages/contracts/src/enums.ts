@@ -11,6 +11,11 @@ export type RunStatus = z.infer<typeof runStatus>;
 export const stepStatus = z.enum(['passed', 'failed']);
 export type StepStatus = z.infer<typeof stepStatus>;
 
+// Operational run lifecycle [tech-arch §4.3, §5.1]. Distinct from the verdict (runStatus, on the
+// attestation): this is queue/execution state the read API surfaces for live-watch [arch §13.2].
+export const runLifecycle = z.enum(['queued', 'running', 'completed', 'canceled']);
+export type RunLifecycle = z.infer<typeof runLifecycle>;
+
 // Same execution path; recorded for metrics [arch §8].
 export const source = z.enum(['mcp', 'dashboard']);
 export type Source = z.infer<typeof source>;
