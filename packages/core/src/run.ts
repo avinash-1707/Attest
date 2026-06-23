@@ -1,7 +1,7 @@
-import type { Attestation, Source } from '@attest/contracts';
+import type { Attestation, Source, AgentRole } from '@attest/contracts';
 import type { BrowserAdapter } from './adapters/browser/index';
 import type { ResolutionAdapter } from './adapters/resolution/index';
-import type { ModelClient } from './adapters/model/index';
+import type { ModelClient, ModelRequest, ModelResponse } from './adapters/model/index';
 import type { EvidenceStore } from './adapters/storage/index';
 import { plan } from './planner/index';
 import { execute, type ExecutionResult } from './executor/index';
@@ -30,6 +30,35 @@ export interface RunDeps {
   now?: () => number; // injectable clock for deterministic tests; defaults to wall clock
 }
 
+// Raw metering inputs for the run, consumed by ee/metering to write the UsageEvent + credit debit
+// [tech-arch §13.2]. NOT part of the Attestation contract (worker-internal), so schemaVersion is
+// untouched [invariant 6]. modelCostUsd is the gateway-reported cost summed across model calls (0 when
+// the gateway reports nothing); the BYOK case is zeroed downstream by the meter, since that cost lands
+// on the user's own OpenRouter account.
+export interface RunMeter {
+  modelCostUsd: number;
+  browserMinutes: number;
+  steps: number;
+}
+
+export interface RunResult {
+  attestation: Attestation;
+  meter: RunMeter;
+}
+
+// Wraps a ModelClient to sum the gateway-reported USD cost across every completion in a run.
+function meteredModel(model: ModelClient): { client: ModelClient; totalCostUsd: () => number } {
+  let total = 0;
+  const client: ModelClient = {
+    async complete(role: AgentRole, req: ModelRequest): Promise<ModelResponse> {
+      const res = await model.complete(role, req);
+      if (typeof res.costUsd === 'number') total += res.costUsd;
+      return res;
+    },
+  };
+  return { client, totalCostUsd: () => total };
+}
+
 // Environment failures (unreachable target, page-load timeout) become inconclusive, not a code-bug
 // failure [arch §4.3, §5.1]. httpStatus 0 = unreachable; a 4xx/5xx is a real verdict failure.
 function detectEnvironmentFailure(execution: ExecutionResult): { reason: string } | undefined {
@@ -45,13 +74,15 @@ function detectEnvironmentFailure(execution: ExecutionResult): { reason: string 
   return undefined;
 }
 
-export async function runAttestation(input: RunInput, deps: RunDeps): Promise<Attestation> {
+export async function runAttestation(input: RunInput, deps: RunDeps): Promise<RunResult> {
   const now = deps.now ?? (() => Date.now());
   const start = now();
   const startedAt = new Date(start).toISOString();
   const ns = { orgId: input.orgId, appId: input.appId };
 
-  const journey = await plan({ goal: input.goal, url: input.url }, deps.model);
+  const { client: model, totalCostUsd } = meteredModel(deps.model);
+
+  const journey = await plan({ goal: input.goal, url: input.url }, model);
 
   const ctx = await deps.browser.newContext({});
   const evidence = new EvidenceCollector(ctx, deps.store, ns);
@@ -66,11 +97,12 @@ export async function runAttestation(input: RunInput, deps: RunDeps): Promise<At
   const verdict = await judge({
     journey,
     execution,
-    model: deps.model,
+    model,
     ...(environmentFailure ? { environmentFailure } : {}),
   });
 
-  return assemble({
+  const durationMs = now() - start;
+  const attestation = assemble({
     meta: {
       runId: input.runId,
       orgId: input.orgId,
@@ -79,10 +111,18 @@ export async function runAttestation(input: RunInput, deps: RunDeps): Promise<At
       goal: input.goal,
       url: input.url,
       startedAt,
-      durationMs: now() - start,
+      durationMs,
     },
     execution,
     verdict,
     evidence,
   });
+
+  const meter: RunMeter = {
+    modelCostUsd: totalCostUsd(),
+    browserMinutes: durationMs / 60_000,
+    steps: attestation.steps.length,
+  };
+
+  return { attestation, meter };
 }

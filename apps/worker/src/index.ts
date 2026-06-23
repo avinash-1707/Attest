@@ -28,7 +28,7 @@ function main(): void {
         // "final attempt" must read the same value. Absent (producer misconfig) => treat as no-retry
         // (1) so a transient failure resolves the run instead of hanging it [tech-arch §7.5].
         maxAttempts: job.opts.attempts ?? 1,
-        run: (input, payload) => runAttestation(input, depsFactory(payload)),
+        run: async (input, payload) => (await runAttestation(input, depsFactory(payload))).attestation,
       }),
     { connection, concurrency: config.concurrency },
   );

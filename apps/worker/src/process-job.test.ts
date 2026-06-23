@@ -12,6 +12,7 @@ const JOB: JobPayload = {
   goal: 'log in',
   url: 'https://example.com/login',
   modelConfig: { models: { planner: 'm', judge: 'm', resolution: 'm' }, apiKey: 'sk-test' },
+  byok: false,
 };
 
 function attestation(status: RunStatus, overrides: Partial<Attestation> = {}): Attestation {

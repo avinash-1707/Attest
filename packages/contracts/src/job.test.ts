@@ -15,6 +15,7 @@ const validJob: JobPayload = {
   url: 'https://staging.app.com',
   modelConfig: validModelConfig,
   credentials: { username: 'qa@app.com', password: 's3cret' },
+  byok: false,
 };
 
 describe('queue job payload contract', () => {

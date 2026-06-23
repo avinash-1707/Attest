@@ -21,5 +21,8 @@ export const jobPayload = z.object({
   modelConfig: runModelConfig,
   // App login credentials, decrypted at enqueue. Shape is app-specific; provisional (see progress-tracker).
   credentials: z.record(z.string(), z.string()).optional(),
+  // True when the run uses the org's BYOK OpenRouter key, so model cost lands on the user's account and
+  // ee/metering zeroes modelCostUsd in the credit debit [tech-arch §13.2]. Defaults false (hosted key).
+  byok: z.boolean().default(false),
 });
 export type JobPayload = z.infer<typeof jobPayload>;

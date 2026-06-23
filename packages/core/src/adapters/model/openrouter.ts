@@ -11,6 +11,11 @@ interface ChatMessage {
 
 interface ChatCompletion {
   choices: Array<{ message: { content: string | null } }>;
+  // OpenRouter returns per-request cost in `usage.cost` automatically on every response (the old
+  // `usage: { include: true }` request flag is deprecated and a no-op). UNIT CAVEAT: treated here as a
+  // USD decimal; confirm against a live response before hosted launch, since it feeds the credit-debit
+  // formula [tech-arch §13.2]. The value is config-multiplied and re-baselined against real run data.
+  usage?: { cost?: number; total_tokens?: number } | null;
 }
 
 export interface OpenAILikeClient {
@@ -50,7 +55,9 @@ export function createOpenRouterModelClient(
       messages.push({ role: 'user', content: req.prompt });
 
       const completion = await client.chat.completions.create({ model, messages });
-      return { text: completion.choices[0]?.message?.content ?? '' };
+      const text = completion.choices[0]?.message?.content ?? '';
+      const cost = completion.usage?.cost;
+      return typeof cost === 'number' ? { text, costUsd: cost } : { text };
     },
   };
 }

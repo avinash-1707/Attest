@@ -59,7 +59,7 @@ describe('runAttestation (full engine pipeline)', () => {
       nav: { 'https://app.com/login': { ok: true, httpStatus: 200, url: 'https://app.com/login' } },
       a11y: [{ role: 'heading', name: 'Dashboard' }],
     });
-    const result = await runAttestation(input, deps);
+    const { attestation: result } = await runAttestation(input, deps);
 
     expect(() => attestation.parse(result)).not.toThrow();
     expect(result.status).toBe('passed');
@@ -67,6 +67,20 @@ describe('runAttestation (full engine pipeline)', () => {
     expect(result.steps).toHaveLength(2);
     expect(result.evidence.screenshotRefs.length).toBeGreaterThan(0);
     expect(result.startedAt).toBe(new Date(1000).toISOString());
+  });
+
+  it('returns a run meter alongside the attestation', async () => {
+    const deps = makeDeps({
+      judge: JSON.stringify({ met: true, reason: 'reached dashboard' }),
+      nav: { 'https://app.com/login': { ok: true, httpStatus: 200, url: 'https://app.com/login' } },
+      a11y: [{ role: 'heading', name: 'Dashboard' }],
+    });
+    const { meter } = await runAttestation(input, deps);
+
+    // Fake model reports no cost; clock is pinned so duration is 0.
+    expect(meter.modelCostUsd).toBe(0);
+    expect(meter.browserMinutes).toBe(0);
+    expect(meter.steps).toBe(2);
   });
 
   it('produces a failed attestation with a dossier on a guard failure', async () => {
@@ -80,7 +94,7 @@ describe('runAttestation (full engine pipeline)', () => {
       // goto reaches the wrong path -> url_assertion fails -> halts on step 0
       nav: { 'https://app.com/login': { ok: true, httpStatus: 200, url: 'https://app.com/oops' } },
     });
-    const result = await runAttestation(input, deps);
+    const { attestation: result } = await runAttestation(input, deps);
 
     expect(() => attestation.parse(result)).not.toThrow();
     expect(result.status).toBe('failed');
@@ -93,7 +107,7 @@ describe('runAttestation (full engine pipeline)', () => {
       judge: JSON.stringify({ met: true, reason: 'n/a' }),
       nav: { 'https://app.com/login': { ok: false, httpStatus: 0, url: 'https://app.com/login' } },
     });
-    const result = await runAttestation(input, deps);
+    const { attestation: result } = await runAttestation(input, deps);
 
     expect(() => attestation.parse(result)).not.toThrow();
     expect(result.status).toBe('inconclusive');
@@ -111,7 +125,7 @@ describe('runAttestation (full engine pipeline)', () => {
       nav: { 'https://app.com/login': { ok: true, httpStatus: 200, url: 'https://app.com/login' } },
       a11y: [{ role: 'heading', name: 'Dashboard' }],
     });
-    const result = await runAttestation(input, deps);
+    const { attestation: result } = await runAttestation(input, deps);
 
     expect(result.status).toBe('failed');
     expect(result.steps.every((s) => s.status === 'passed')).toBe(true); // steps ok, goal unmet
