@@ -10,3 +10,4 @@ export * from './attestation';
 export * from './evidence';
 export * from './usage-event';
 export * from './secrets';
+export * from './billing';

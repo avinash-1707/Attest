@@ -1,4 +1,4 @@
-import { pgTable, text, integer, numeric, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, numeric, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { idColumn, orgIdColumn, timestamps } from './columns';
 import { run } from './run';
 import { app } from './app';
@@ -26,6 +26,8 @@ export const usageEvent = pgTable(
   },
   (t) => [
     index('usage_event_org_occurred_idx').on(t.orgId, t.occurredAt),
-    index('usage_event_org_run_idx').on(t.orgId, t.runId),
+    // One usage event per run; a BullMQ re-delivery upserts to a no-op alongside the credit debit
+    // [tech-arch §13.2]. Replaces the prior non-unique (org_id, run_id) index (this covers it too).
+    uniqueIndex('usage_event_org_run_uq').on(t.orgId, t.runId),
   ],
 );

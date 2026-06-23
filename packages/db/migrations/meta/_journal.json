@@ -15,6 +15,13 @@
       "when": 1782114261933,
       "tag": "0001_careful_thing",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782192152388,
+      "tag": "0002_nervous_nemesis",
+      "breakpoints": true
     }
   ]
 }
