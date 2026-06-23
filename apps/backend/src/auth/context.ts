@@ -3,7 +3,7 @@ import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyRequest } from 'fastify';
 import type { DataAccess } from '@attest/db';
 import type { Auth } from './auth';
-import { ApiError } from './errors';
+import { ApiError } from '../platform/errors';
 
 // The single type both auth doors converge on [arch §6, invariant 1]. Past this boundary a request
 // is just "an org plus the apps I may act on" - the route does not know which door it came through.

@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { runCreate, type Source } from '@attest/contracts';
-import type { BackendDeps } from '../deps';
-import { resolveContext } from '../context';
-import { enqueueRun } from '../enqueue';
-import { ApiError } from '../errors';
+import type { BackendDeps } from '../platform/deps';
+import { resolveContext } from '../auth/context';
+import { enqueueRun } from './enqueue';
+import { ApiError } from '../platform/errors';
 
 // POST /runs: the single run-create path, exercised by both auth doors [arch §4.1, invariant 1].
 // Authenticate -> resolve org + app scope -> validate body -> scope-check -> enqueue.

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { handleAttest, handleAssertOutcome, handleVerifyFlow, handleExplainFailure, type ToolDeps } from './tools';
-import { BackendError, type BackendClient } from './client';
-import { fakeClient, passedAttestation, failedAttestation } from './test-fixtures';
+import { BackendError, type BackendClient } from '../backend/client';
+import { fakeClient, passedAttestation, failedAttestation } from '../test-fixtures';
 
 const runner = { pollIntervalMs: 10, pollTimeoutMs: 100, sleep: async () => {} };
 

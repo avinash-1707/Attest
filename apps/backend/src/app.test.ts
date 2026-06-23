@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildApp } from './app';
-import type { BackendDeps } from './deps';
+import type { BackendDeps } from './platform/deps';
 
 const MODELS = { planner: 'm/p', judge: 'm/j', resolution: 'm/r' };
 

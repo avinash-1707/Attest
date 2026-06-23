@@ -1,5 +1,5 @@
-import { loadConfig } from './config';
-import { createDeps } from './deps';
+import { loadConfig } from './platform/config';
+import { createDeps } from './platform/deps';
 import { buildApp } from './app';
 
 // Entry: validate config (throws -> never binds), build deps + app, listen, drain on signal.

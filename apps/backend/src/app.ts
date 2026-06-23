@@ -1,13 +1,13 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { toNodeHandler } from 'better-auth/node';
-import type { BackendDeps } from './deps';
-import { registerErrorHandler } from './errors';
-import { registerCsrfGuard } from './csrf';
-import { registerRunRoutes } from './routes/runs';
-import { registerReadRoutes } from './routes/reads';
-import { registerEvidenceRoutes } from './routes/evidence';
-import { registerManagementRoutes } from './routes/management';
+import type { BackendDeps } from './platform/deps';
+import { registerErrorHandler } from './platform/errors';
+import { registerCsrfGuard } from './auth/csrf';
+import { registerRunRoutes } from './runs/runs.routes';
+import { registerReadRoutes } from './runs/reads.routes';
+import { registerEvidenceRoutes } from './evidence/evidence.routes';
+import { registerManagementRoutes } from './management/management.routes';
 
 // Assembles the Fastify app from already-constructed deps. Pure wiring, so it builds and can be
 // exercised via app.inject() with no live socket, db, or Redis.

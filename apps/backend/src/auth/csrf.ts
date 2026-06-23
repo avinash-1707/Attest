@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { bearerToken } from './context';
-import { ApiError } from './errors';
+import { ApiError } from '../platform/errors';
 
 // CSRF guard for the cookie/session door [security, Next up #3]. Better Auth runs its own origin check
 // on /api/auth/*; this covers Attest's OWN state-changing routes, which Better Auth does not see.

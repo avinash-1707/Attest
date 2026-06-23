@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildApp } from './app';
-import type { BackendDeps } from './deps';
-import { hashServiceKey } from './context';
+import { buildApp } from '../app';
+import type { BackendDeps } from '../platform/deps';
+import { hashServiceKey } from '../auth/context';
 
 const TS = new Date('2026-06-23T00:00:00.000Z');
 

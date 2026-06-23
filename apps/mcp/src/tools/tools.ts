@@ -6,8 +6,8 @@ import {
   explainFailureResponse,
   type ExplainFailureResponse,
 } from '@attest/contracts';
-import { BackendError, type BackendClient } from './client';
-import { runAndAwait, type RunnerDeps } from './runner';
+import { BackendError, type BackendClient } from '../backend/client';
+import { runAndAwait, type RunnerDeps } from '../backend/runner';
 
 // The QA-primitive tool surface [prd §6.1]. attest/assert_outcome/verify_flow all resolve to the one
 // backend run path {appId,goal,url} [invariant 1]: they are agent-ergonomic framings that compose a

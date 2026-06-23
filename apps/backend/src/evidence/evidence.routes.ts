@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import type { BackendDeps } from '../deps';
-import { resolveContext } from '../context';
-import { ApiError } from '../errors';
+import type { BackendDeps } from '../platform/deps';
+import { resolveContext } from '../auth/context';
+import { ApiError } from '../platform/errors';
 
 // GET /evidence?ref=<storageKey> - streams the raw bytes for an opaque evidence ref. The ref carries
 // slashes (org/app/kind/id.ext), so it travels as a query param. Resolution is double-gated: the DAL

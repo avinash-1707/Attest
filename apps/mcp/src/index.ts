@@ -8,7 +8,7 @@ import {
   explainFailureRequest,
 } from '@attest/contracts';
 import { loadConfig } from './config';
-import { createBackendClient } from './client';
+import { createBackendClient } from './backend/client';
 import {
   handleAttest,
   handleAssertOutcome,
@@ -16,7 +16,7 @@ import {
   handleExplainFailure,
   type ToolDeps,
   type ToolResult,
-} from './tools';
+} from './tools/tools';
 
 // apps/mcp: the agent-facing MCP server [arch §3.1]. A thin stdio client of apps/backend - it owns no
 // execution logic [invariant 1]. It authenticates with a service key and acts on exactly one app, both

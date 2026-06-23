@@ -12,9 +12,9 @@ import {
   appCredentialView,
 } from '@attest/contracts';
 import type { App, AppKey, ModelKey, AppCredential } from '@attest/db';
-import type { BackendDeps } from '../deps';
-import { resolveContext, hashServiceKey, generateServiceKey, type RequestContext } from '../context';
-import { ApiError } from '../errors';
+import type { BackendDeps } from '../platform/deps';
+import { resolveContext, hashServiceKey, generateServiceKey, type RequestContext } from '../auth/context';
+import { ApiError } from '../platform/errors';
 
 // Management API: org/app/key/secret administration. Session-only - a service key is for running
 // attestations, never for self-administration [arch §6.2], so a bearer principal is refused.

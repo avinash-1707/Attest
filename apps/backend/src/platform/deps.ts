@@ -15,8 +15,8 @@ import type { EvidenceStore } from '@attest/core';
 import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
 import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
 import type { BackendConfig } from './config';
-import { buildAuth, type Auth } from './auth';
-import { createConsoleMailer } from './mailer';
+import { buildAuth, type Auth } from '../auth/auth';
+import { createConsoleMailer } from '../auth/mailer';
 
 // Read-only here: the backend serves evidence bytes from the same store the worker wrote to
 // [tech-arch §3.4, §8]. Selected once from config; subpath imports pull only the storage SDK.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { runAndAwait } from './runner';
-import { fakeClient, passedAttestation } from './test-fixtures';
+import { fakeClient, passedAttestation } from '../test-fixtures';
 
 const noSleep = async () => {};
 const poll = { pollIntervalMs: 10, pollTimeoutMs: 100, sleep: noSleep };

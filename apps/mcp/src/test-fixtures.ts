@@ -1,6 +1,6 @@
 import type { Attestation, RunCreated, RunStatusView, RunLifecycle, RunStatus } from '@attest/contracts';
 import { SCHEMA_VERSION } from '@attest/contracts';
-import type { BackendClient } from './client';
+import type { BackendClient } from './backend/client';
 
 export const passedAttestation: Attestation = {
   schemaVersion: SCHEMA_VERSION,

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createBackendClient, BackendError, type FetchLike } from './client';
-import { passedAttestation } from './test-fixtures';
+import { passedAttestation } from '../test-fixtures';
 
 type Call = { url: string; init: RequestInit };
 

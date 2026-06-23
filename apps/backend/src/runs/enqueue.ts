@@ -9,7 +9,7 @@ import {
   type Source,
 } from '@attest/contracts';
 import type { DataAccess, OrgScope, SecretCipher, OrgCipher } from '@attest/db';
-import { ApiError } from './errors';
+import { ApiError } from '../platform/errors';
 
 // The run-enqueue producer: the one path that turns an authenticated request into a queued job
 // [arch §4.1, tech-arch §5]. It is also the only place backend-side where a decrypted secret exists

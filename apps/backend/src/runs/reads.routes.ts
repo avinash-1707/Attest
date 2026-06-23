@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { runStatusView, runList, runListItem, evidenceList, evidenceRefView } from '@attest/contracts';
-import type { BackendDeps } from '../deps';
-import { resolveContext } from '../context';
-import { ApiError } from '../errors';
+import type { BackendDeps } from '../platform/deps';
+import { resolveContext } from '../auth/context';
+import { ApiError } from '../platform/errors';
 
 // Read API [tech-arch §2.2 #5]. All reads go through dal.forOrg(ctx.orgId) so a caller only ever sees
 // its own org's rows [invariant 3]; every response is re-validated against its DTO on the way out.

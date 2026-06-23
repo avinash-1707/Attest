@@ -3,7 +3,7 @@ import { buildAuth, type Auth } from './auth';
 import { createConsoleMailer } from './mailer';
 
 // Schema-introspection instance, isolated so the running app and its tests NEVER construct it.
-// `@better-auth/cli generate --config apps/backend/src/auth.cli.ts` reads this `auth` export to
+// `@better-auth/cli generate --config apps/backend/src/auth/auth.cli.ts` reads this `auth` export to
 // (re)generate packages/db/src/schema/auth.ts. Env is read loosely on purpose: schema generation
 // must not depend on a real secret/KEK, and this module is never imported on the runtime path, so
 // the placeholder secret and the eager getDb() pool stay out of the app and test bundles.
