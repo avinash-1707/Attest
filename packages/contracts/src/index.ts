@@ -4,6 +4,7 @@ export * from './enums';
 export * from './evidence';
 export * from './attestation';
 export * from './tools';
+export * from './api';
 export * from './job';
 export * from './queue';
 export * from './allowlist';
