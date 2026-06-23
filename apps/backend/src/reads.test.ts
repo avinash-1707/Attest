@@ -66,7 +66,7 @@ function makeDeps(): BackendDeps {
 
   const org = {
     runs: { list: vi.fn(async () => [runRow]), get: getRun },
-    attestations: { getByRun },
+    attestations: { getByRun, statusByRun: vi.fn(async (id: string) => (id === 'run_1' ? 'passed' : undefined)) },
     evidence: { listForRun: vi.fn(async () => [evRow]), getByStorageKey },
     appKeys: { touchLastUsed: vi.fn(async () => undefined) },
   };

@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { attestation as attestationContract, type Attestation } from '@attest/contracts';
+import { attestation as attestationContract, type Attestation, type RunStatus } from '@attest/contracts';
 import type { Db } from './types';
 import { attestation as attestationTable } from '../schema';
 
@@ -34,6 +34,16 @@ export function attestationRepo(db: Db, orgId: string) {
         .from(attestationTable)
         .where(and(eq(attestationTable.orgId, orgId), eq(attestationTable.runId, runId)));
       return row ? attestationContract.parse(row.document) : undefined;
+    },
+
+    // Reads only the denormalized verdict column - for status polling (the hottest read), so a poll
+    // does not materialize + re-validate the full attestation document. undefined = no verdict yet.
+    async statusByRun(runId: string): Promise<RunStatus | undefined> {
+      const [row] = await db
+        .select({ status: attestationTable.status })
+        .from(attestationTable)
+        .where(and(eq(attestationTable.orgId, orgId), eq(attestationTable.runId, runId)));
+      return row?.status as RunStatus | undefined;
     },
   };
 }

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyRequest } from 'fastify';
 import type { DataAccess } from '@attest/db';
@@ -22,6 +22,13 @@ export interface RequestContext {
 // [tech-arch §6, db schema]; key creation (a later unit) must hash the same way.
 export function hashServiceKey(raw: string): string {
   return createHash('sha256').update(raw).digest('hex');
+}
+
+// Mints a new service key at creation: the full secret (returned once) + its display prefix (stored,
+// safe to show). Only the hash of `key` is persisted [arch §6.2, invariant 4].
+export function generateServiceKey(): { key: string; prefix: string } {
+  const key = `ak_live_${randomBytes(24).toString('base64url')}`;
+  return { key, prefix: key.slice(0, 12) };
 }
 
 function bearerToken(req: FastifyRequest): string | undefined {

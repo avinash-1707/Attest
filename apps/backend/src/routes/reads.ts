@@ -34,7 +34,9 @@ export function registerReadRoutes(app: FastifyInstance, deps: BackendDeps): voi
     const org = deps.dal.forOrg(ctx.orgId);
     const run = await org.runs.get(req.params.id);
     if (!run) throw new ApiError(404, 'run_not_found', 'Run not found');
-    const attestation = await org.attestations.getByRun(run.id);
+    // Status only: the verdict is a denormalized column, so polling never materializes the full
+    // attestation document [query-optimization review]. Use GET /runs/:id/attestation for the rest.
+    const verdict = await org.attestations.statusByRun(run.id);
     return runStatusView.parse({
       runId: run.id,
       appId: run.appId,
@@ -42,7 +44,7 @@ export function registerReadRoutes(app: FastifyInstance, deps: BackendDeps): voi
       goal: run.goal,
       url: run.url,
       lifecycle: run.lifecycle,
-      status: attestation?.status ?? null,
+      status: verdict ?? null,
       attempt: run.attempt,
       createdAt: run.createdAt.toISOString(),
       startedAt: run.startedAt?.toISOString() ?? null,

@@ -54,6 +54,24 @@ export function appKeyRepo(db: Db, orgId: string) {
         .orderBy(desc(appKey.createdAt));
     },
 
+    // Keys + their app scope in a SINGLE join query (avoids an N+1 scopedAppIds call per key when
+    // listing for the dashboard). A key with no scope rows comes back with appIds: [].
+    async listWithScopes(): Promise<Array<AppKey & { appIds: string[] }>> {
+      const rows = await db
+        .select({ key: appKey, appId: appKeyApp.appId })
+        .from(appKey)
+        .leftJoin(appKeyApp, and(eq(appKeyApp.appKeyId, appKey.id), eq(appKeyApp.orgId, orgId)))
+        .where(eq(appKey.orgId, orgId))
+        .orderBy(desc(appKey.createdAt));
+      const byId = new Map<string, AppKey & { appIds: string[] }>();
+      for (const row of rows) {
+        const existing = byId.get(row.key.id) ?? { ...row.key, appIds: [] };
+        if (row.appId) existing.appIds.push(row.appId);
+        byId.set(row.key.id, existing);
+      }
+      return [...byId.values()];
+    },
+
     async scopedAppIds(appKeyId: string): Promise<string[]> {
       const rows = await db
         .select({ appId: appKeyApp.appId })

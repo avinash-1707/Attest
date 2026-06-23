@@ -71,6 +71,8 @@ describe('tenant isolation [arch §5.2, invariant 3]', () => {
 
     expect(await a.apps.list()).toHaveLength(1);
     expect((await a.attestations.getByRun(run.id))?.status).toBe('passed');
+    expect(await a.attestations.statusByRun(run.id)).toBe('passed');
+    expect(await b.attestations.statusByRun(run.id)).toBeUndefined();
     expect((await a.evidence.get(ev.id))?.id).toBe(ev.id);
     expect((await a.evidence.getByStorageKey('org_a/app/ev1.png'))?.id).toBe(ev.id);
   });
@@ -80,6 +82,22 @@ describe('tenant isolation [arch §5.2, invariant 3]', () => {
     await expect(
       dao.forOrg('org_b').runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' }),
     ).rejects.toThrow(/not found in org/);
+  });
+
+  it('listWithScopes returns each key with its app scope in one query', async () => {
+    const a = dao.forOrg('org_a');
+    const app1 = await a.apps.create({ name: 'one' });
+    const app2 = await a.apps.create({ name: 'two' });
+    await a.appKeys.create({ name: 'multi', keyHash: 'h1', keyPrefix: 'ak_1', appIds: [app1.id, app2.id] });
+    await a.appKeys.create({ name: 'single', keyHash: 'h2', keyPrefix: 'ak_2', appIds: [app1.id] });
+
+    const keys = await a.appKeys.listWithScopes();
+    expect(keys).toHaveLength(2);
+    const multi = keys.find((k) => k.name === 'multi');
+    expect(multi?.appIds.sort()).toEqual([app1.id, app2.id].sort());
+    expect(keys.find((k) => k.name === 'single')?.appIds).toEqual([app1.id]);
+    // org_b sees none.
+    expect(await dao.forOrg('org_b').appKeys.listWithScopes()).toHaveLength(0);
   });
 
   it('refuses a service key scoped to an app outside the org', async () => {
