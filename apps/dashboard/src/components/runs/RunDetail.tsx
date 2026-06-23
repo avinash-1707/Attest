@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRun, useAttestation, useEvidence } from '@/lib/hooks';
 import { BACKEND_URL } from '@/lib/env';
@@ -17,8 +18,8 @@ interface RunDetailProps {
 export function RunDetail({ id }: RunDetailProps) {
   const { data: run, isPending: runPending } = useRun(id, { live: true });
   const attestationEnabled = run?.lifecycle === 'completed';
-  const { data: attestation, isPending: attPending } = useAttestation(id, { enabled: attestationEnabled });
-  const { data: evidenceData } = useEvidence(id);
+  const { data: attestation, isPending: attPending, error: attError } = useAttestation(id, { enabled: attestationEnabled });
+  const { data: evidenceData, error: evidenceError } = useEvidence(id, { enabled: attestationEnabled });
 
   if (runPending) {
     return (
@@ -37,6 +38,8 @@ export function RunDetail({ id }: RunDetailProps) {
   }
 
   const evidenceItems = evidenceData?.evidence ?? [];
+  const attErrorMsg = attError ? (attError as Error).message : null;
+  const evidenceErrorMsg = evidenceError ? (evidenceError as Error).message : null;
 
   return (
     <div style={{ padding: 'var(--space-8)', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -74,6 +77,8 @@ export function RunDetail({ id }: RunDetailProps) {
               Loading attestation...
             </span>
           </div>
+        ) : attErrorMsg ? (
+          <ErrorMessage message={`Could not load attestation: ${attErrorMsg}`} />
         ) : attestation ? (
           <>
             <AttestationCard attestation={attestation} />
@@ -85,6 +90,10 @@ export function RunDetail({ id }: RunDetailProps) {
             )}
           </>
         ) : null
+      )}
+
+      {attestationEnabled && evidenceErrorMsg && (
+        <ErrorMessage message={`Could not load evidence: ${evidenceErrorMsg}`} />
       )}
 
       {evidenceItems.length > 0 && (
@@ -449,6 +458,7 @@ function EvidenceSection({ items }: { items: EvidenceRefView[] }) {
 
 function EvidenceScreenshot({ item }: { item: EvidenceRefView }) {
   const src = `${BACKEND_URL}${item.url}`;
+  const [failed, setFailed] = useState(false);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -463,17 +473,37 @@ function EvidenceScreenshot({ item }: { item: EvidenceRefView }) {
           </span>
         )}
       </div>
-      <img
-        src={src}
-        alt={`Screenshot${item.stepIndex != null ? ` from step ${item.stepIndex + 1}` : ''}`}
-        crossOrigin="use-credentials"
-        style={{
-          maxWidth: '100%',
-          border: '1px solid var(--data-border)',
-          borderRadius: 'var(--radius-xs)',
-          display: 'block',
-        }}
-      />
+      {failed ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-6)',
+            backgroundColor: 'var(--data-surface)',
+            border: '1px solid var(--data-border)',
+            borderRadius: 'var(--radius-xs)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--text-muted)',
+          }}
+        >
+          Screenshot could not be loaded.
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={`Screenshot${item.stepIndex != null ? ` from step ${item.stepIndex + 1}` : ''}`}
+          crossOrigin="use-credentials"
+          onError={() => setFailed(true)}
+          style={{
+            maxWidth: '100%',
+            border: '1px solid var(--data-border)',
+            borderRadius: 'var(--radius-xs)',
+            display: 'block',
+          }}
+        />
+      )}
     </div>
   );
 }

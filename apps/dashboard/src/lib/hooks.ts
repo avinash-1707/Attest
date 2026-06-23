@@ -41,8 +41,8 @@ export function useAttestation(id: string, opts: { enabled?: boolean } = {}) {
   return useQuery({ queryKey: qk.attestation(id), queryFn: () => api.getAttestation(id), enabled: opts.enabled ?? true });
 }
 
-export function useEvidence(id: string) {
-  return useQuery({ queryKey: qk.evidence(id), queryFn: () => api.listEvidence(id) });
+export function useEvidence(id: string, opts: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: qk.evidence(id), queryFn: () => api.listEvidence(id), enabled: opts.enabled ?? true });
 }
 
 export function useCreateRun() {
