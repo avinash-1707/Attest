@@ -29,6 +29,11 @@ export function buildAuth(deps: AuthDeps) {
     baseURL: deps.baseURL,
     trustedOrigins: deps.trustedOrigins,
     emailAndPassword: { enabled: true, requireEmailVerification: true },
+    // OTP verification is how a new email/password account proves its address, and signUp returns no
+    // session while unverified. The verify-email step must therefore ESTABLISH the session, or the
+    // post-verify handoff (apps/web -> apps/dashboard) lands on a client with no cookie and bounces
+    // straight back to sign-in. autoSignInAfterVerification makes verifyEmail create + set the session.
+    emailVerification: { autoSignInAfterVerification: true },
     socialProviders: deps.google ? { google: deps.google } : {},
     // Auto-link a Google sign-in to an existing same-email account, but only when that local account
     // is already email-verified (requireLocalEmailVerified). This blocks the takeover where an

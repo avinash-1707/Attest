@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/lib/auth-client';
+import { WEB_URL } from '@/lib/env';
 
 export function UserMenu() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const email = session?.user?.email ?? '';
   const name = session?.user?.name ?? email;
@@ -18,11 +17,12 @@ export function UserMenu() {
     try {
       await signOut();
     } catch {
-      // sign-out errors are non-fatal; navigate to sign-in regardless
+      // sign-out errors are non-fatal; navigate to the auth surface regardless
     } finally {
       setLoading(false);
     }
-    router.push('/sign-in');
+    // The auth surface lives in apps/web (a different origin); a full navigation hands control off.
+    window.location.assign(`${WEB_URL}/sign-in`);
   }
 
   return (

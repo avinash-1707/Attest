@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { OtpVerifyForm } from '@/components/auth/OtpVerifyForm';
 
 export const metadata: Metadata = {
@@ -12,6 +13,12 @@ interface Props {
 export default async function VerifyEmailPage({ searchParams }: Props) {
   const params = await searchParams;
   const email = params.email ?? '';
+
+  // The page only makes sense in the signup flow, which carries the address. Without it there is no
+  // account to verify and "resend" would email an arbitrary address, so send the visitor to sign-up.
+  if (!email) {
+    redirect('/sign-up');
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>

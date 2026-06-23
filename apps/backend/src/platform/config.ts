@@ -14,7 +14,10 @@ const base = z.object({
   kekId: z.string().min(1).default('env'),
   betterAuthSecret: z.string().min(1),
   betterAuthUrl: z.string().min(1),
-  // CSRF whitelist for the cookie-based session path (the dashboard origin) [security].
+  // Allowlist for the browser origins that talk to the backend: apps/web (auth) + apps/dashboard.
+  // This ONE list is load-bearing three ways - CORS allow-origin (app.ts), the CSRF Origin guard
+  // (csrf.ts), AND BetterAuth's OAuth callbackURL validation (the open-redirect gate). Never put a
+  // wildcard here: a broadened entry silently widens where OAuth will redirect post-auth [security].
   trustedOrigins: z.array(z.string().min(1)).default([]),
   google: z.object({ clientId: z.string().min(1), clientSecret: z.string().min(1) }).optional(),
   // Hosted default OpenRouter key, used when an org has no BYOK model key [arch §7.2]. Optional so a

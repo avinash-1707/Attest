@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUp, signIn } from '@/lib/auth-client';
+import { DASHBOARD_URL } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -27,6 +28,7 @@ export function SignUpForm() {
         setError(result.error.message ?? 'Registration failed. Try again.');
         return;
       }
+      // verify-email lives in web too; handoff to the dashboard happens after the OTP step.
       router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch {
       setError('Registration failed. Check your details and try again.');
@@ -39,7 +41,7 @@ export function SignUpForm() {
     setError(null);
     setGoogleLoading(true);
     try {
-      await signIn.social({ provider: 'google', callbackURL: '/' });
+      await signIn.social({ provider: 'google', callbackURL: DASHBOARD_URL });
     } catch {
       setError('Google sign-up failed. Try again or use email and password.');
       setGoogleLoading(false);

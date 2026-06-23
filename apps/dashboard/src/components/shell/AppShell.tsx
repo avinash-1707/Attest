@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
+import { WEB_URL } from '@/lib/env';
 import { Sidebar } from './Sidebar';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -22,7 +23,8 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (isPending) return;
     if (!session) {
-      router.replace('/sign-in');
+      // The auth surface lives in apps/web (a different origin); a full navigation hands control off.
+      window.location.assign(`${WEB_URL}/sign-in`);
       return;
     }
     if (!activeOrgId) {

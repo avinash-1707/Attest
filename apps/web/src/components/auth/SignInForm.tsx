@@ -1,15 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from '@/lib/auth-client';
+import { DASHBOARD_URL } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 export function SignInForm() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +25,9 @@ export function SignInForm() {
         setError(result.error.message ?? 'Authentication failed. Check your credentials and try again.');
         return;
       }
-      router.push('/');
+      // Hand off to the dashboard (a different origin); a full navigation carries the new session
+      // cookie. The dashboard's own guard takes over org selection from here.
+      window.location.assign(DASHBOARD_URL);
     } catch {
       setError('Sign-in failed. Check your credentials and try again.');
     } finally {
@@ -38,7 +39,7 @@ export function SignInForm() {
     setError(null);
     setGoogleLoading(true);
     try {
-      await signIn.social({ provider: 'google', callbackURL: '/' });
+      await signIn.social({ provider: 'google', callbackURL: DASHBOARD_URL });
     } catch {
       setError('Google sign-in failed. Try again or use email and password.');
       setGoogleLoading(false);

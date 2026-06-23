@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { DASHBOARD_URL } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -12,7 +12,6 @@ interface OtpVerifyFormProps {
 }
 
 export function OtpVerifyForm({ email }: OtpVerifyFormProps) {
-  const router = useRouter();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +37,8 @@ export function OtpVerifyForm({ email }: OtpVerifyFormProps) {
         setError(result.error.message ?? 'Invalid code. Check the code and try again.');
         return;
       }
-      router.push('/');
+      // Verified and signed in; hand off to the dashboard (a different origin) with a full navigation.
+      window.location.assign(DASHBOARD_URL);
     } catch {
       setError('Verification failed. Check the code and try again.');
     } finally {
@@ -54,7 +54,10 @@ export function OtpVerifyForm({ email }: OtpVerifyFormProps) {
         | { sendVerificationOtp: (opts: { email: string; type: string }) => Promise<{ error?: { message?: string } | null }> }
         | undefined;
 
-      if (!emailOtp) return;
+      if (!emailOtp) {
+        setError('OTP verification is not configured on this client.');
+        return;
+      }
       await emailOtp.sendVerificationOtp({ email, type: 'email-verification' });
       setResent(true);
     } catch {
