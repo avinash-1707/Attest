@@ -60,6 +60,13 @@ export function createBillingWebhookHandler(deps: {
       const orgId = await deps.dal.resolveOrgByDodoCustomer(customerId);
       if (!orgId) return ack(deps, webhookId, event.type, 'ignored');
 
+      // Process every verified event and rely on the ledger's idempotency_key (= webhookId) for
+      // correctness: a replay re-grants to a no-op. We deliberately do NOT gate on the webhook_event
+      // dedupe row, because recording it before applying would open a crash-between-record-and-grant
+      // window that silently drops a paid grant. Consequence: subscription STATUS upserts are
+      // last-writer-wins (Dodo gives no ordering guarantee). Acceptable in v1 because the gate reads the
+      // ledger BALANCE (order-independent), not subscriptionStatus; revisit when a good-standing buffer
+      // makes status gate-relevant [tech-arch §13.4].
       try {
         await applyEvent(deps.dal.forOrg(orgId), event, webhookId, deps.pricing);
       } catch {

@@ -95,4 +95,32 @@ describe('billing webhook handler [tech-arch §13.5]', () => {
     expect(res.statusCode).toBe(200);
     expect(grant).not.toHaveBeenCalled();
   });
+
+  it('returns 503 (not 200) when a DB write throws, so Dodo retries and the ACK is not recorded', async () => {
+    const verify: WebhookVerify = () => ({
+      type: 'subscription.renewed',
+      data: { customer: { customer_id: 'cus_1' }, subscription_id: 'sub_1', recurring_pre_tax_amount: 2000 },
+    });
+    const d = makeDal('org_1');
+    d.grant.mockRejectedValueOnce(new Error('db down'));
+    const handler = createBillingWebhookHandler({ dal: d.dal, pricing: defaultPricing(), verify });
+    const res = await handler.handle('{}', HEADERS);
+    expect(res.statusCode).toBe(503);
+    expect(d.recordWebhookEvent).not.toHaveBeenCalled(); // not ACKed -> Dodo retries
+  });
+
+  it.each(['on_hold', 'cancelled', 'expired'])(
+    'records subscription.%s status without granting',
+    async (status) => {
+      const verify: WebhookVerify = () => ({
+        type: `subscription.${status}`,
+        data: { customer: { customer_id: 'cus_1' }, subscription_id: 'sub_1' },
+      });
+      const { handler, grant, upsert } = handlerWith(verify);
+      const res = await handler.handle('{}', HEADERS);
+      expect(res.statusCode).toBe(200);
+      expect(upsert).toHaveBeenCalledWith({ subscriptionStatus: status });
+      expect(grant).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -41,5 +41,7 @@ export function creditsForRun(input: RunMeterInput, pricing: BillingPricing): nu
 // captured at debit time, not here [tech-arch §13.2, §13.3].
 export function creditsFromAmount(amountMinorUnits: number, pricing: BillingPricing): number {
   const usd = amountMinorUnits / 100;
-  return Math.round(usd / pricing.centValueUsd);
+  // floor, never round up: never grant more face value than was paid (margin-safe on odd FX-converted
+  // minor-unit amounts from the Merchant of Record).
+  return Math.floor(usd / pricing.centValueUsd);
 }

@@ -215,4 +215,32 @@ describe('processRunJob', () => {
     await expect(processRunJob(JOB, ctx({ dal, meter }))).rejects.toBeInstanceOf(UnrecoverableError);
     expect(meter.recordAndDebit).not.toHaveBeenCalled();
   });
+
+  it('meters a failed verdict (it consumed browser + model budget)', async () => {
+    const { dal } = makeDal();
+    const meter = { recordAndDebit: vi.fn(async () => {}) };
+    const run = vi.fn(async () => runResult('failed'));
+    await processRunJob(JOB, ctx({ dal, meter, run, attemptsMade: 0 }));
+    expect(meter.recordAndDebit).toHaveBeenCalledWith(expect.objectContaining({ runId: 'run_1', byok: false }));
+  });
+
+  it('does NOT meter an inconclusive run (no verdict, no charge) even on the final attempt', async () => {
+    const { dal, runs } = makeDal();
+    const meter = { recordAndDebit: vi.fn(async () => {}) };
+    const run = vi.fn(async () => runResult('inconclusive'));
+    const res = await processRunJob(JOB, ctx({ dal, meter, run, attemptsMade: 2, maxAttempts: 3 }));
+    expect(res.status).toBe('inconclusive');
+    expect(runs.markCompleted).toHaveBeenCalled(); // run resolved...
+    expect(meter.recordAndDebit).not.toHaveBeenCalled(); // ...but was not billed
+  });
+
+  it('does not meter an inconclusive run that is retried (thrown before completion)', async () => {
+    const { dal } = makeDal();
+    const meter = { recordAndDebit: vi.fn(async () => {}) };
+    const run = vi.fn(async () => runResult('inconclusive'));
+    await expect(
+      processRunJob(JOB, ctx({ dal, meter, run, attemptsMade: 0, maxAttempts: 3 })),
+    ).rejects.toBeInstanceOf(EnvironmentRetryError);
+    expect(meter.recordAndDebit).not.toHaveBeenCalled();
+  });
 });

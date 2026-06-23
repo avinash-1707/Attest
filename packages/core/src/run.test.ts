@@ -83,6 +83,28 @@ describe('runAttestation (full engine pipeline)', () => {
     expect(meter.steps).toBe(2);
   });
 
+  it('sums gateway-reported model cost across every model call in the run', async () => {
+    const deps = makeDeps({
+      judge: JSON.stringify({ met: true, reason: 'reached dashboard' }),
+      nav: { 'https://app.com/login': { ok: true, httpStatus: 200, url: 'https://app.com/login' } },
+      a11y: [{ role: 'heading', name: 'Dashboard' }],
+    });
+    // Wrap the fake so every completion (planner + judge) reports a cost; the accumulator must sum them.
+    const inner = deps.model;
+    let calls = 0;
+    deps.model = {
+      complete: async (role, req) => {
+        calls += 1;
+        const res = await inner.complete(role, req);
+        return { ...res, costUsd: 0.03 };
+      },
+    };
+    const { meter } = await runAttestation(input, deps);
+
+    expect(calls).toBe(2); // planner + judge
+    expect(meter.modelCostUsd).toBeCloseTo(0.06, 10);
+  });
+
   it('produces a failed attestation with a dossier on a guard failure', async () => {
     const deps = makeDeps({
       judge: JSON.stringify({

@@ -127,16 +127,20 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
 
   // Meter the resolved run: UsageEvent + credit debit, idempotent on runId so a re-delivery converges
   // [tech-arch §13.2]. No-op in the OSS build. Runs last; if it throws, the job retries and the
-  // idempotent writes converge rather than double-charging.
-  await ctx.meter.recordAndDebit({
-    orgId: job.orgId,
-    appId: job.appId,
-    runId: job.runId,
-    browserMinutes: runOut.meter.browserMinutes,
-    steps: runOut.meter.steps,
-    modelCostUsd: runOut.meter.modelCostUsd,
-    byok: job.byok,
-  });
+  // idempotent writes converge rather than double-charging. An `inconclusive` run (environment failure,
+  // target unreachable) consumed resources but gave the user no verdict, so it is NOT billed - only a
+  // passed/failed verdict charges. byok is snapshotted at enqueue (job.byok), not re-read here.
+  if (att.status !== 'inconclusive') {
+    await ctx.meter.recordAndDebit({
+      orgId: job.orgId,
+      appId: job.appId,
+      runId: job.runId,
+      browserMinutes: runOut.meter.browserMinutes,
+      steps: runOut.meter.steps,
+      modelCostUsd: runOut.meter.modelCostUsd,
+      byok: job.byok,
+    });
+  }
 
   return { status: att.status };
 }

@@ -227,6 +227,23 @@ describe('credit ledger [tech-arch §13.4]', () => {
     const usage = await a.usage.listSince(new Date(0));
     expect(usage).toHaveLength(1);
     expect(usage[0]?.steps).toBe(3);
+    // Exactly one debit row, not just the right balance: pins idempotency at the row level.
+    expect((await a.credits.list()).filter((r) => r.kind === 'debit')).toHaveLength(1);
+  });
+
+  it('sums a mixed sequence of grant + purchase + debit into a signed balance', async () => {
+    const a = dao.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    const run = await a.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://x.com' });
+    await a.credits.grant({ amount: 250, idempotencyKey: 'starter:org_a', reason: 'starter' });
+    await a.credits.grant({ amount: 500, idempotencyKey: 'wh_pack', reason: 'pack_purchase', kind: 'purchase' });
+    await a.credits.debitForRun({
+      runId: run.id,
+      appId: app.id,
+      credits: 9,
+      usage: { browserMinutes: 1, steps: 2, modelCostUsd: 0.08 },
+    });
+    expect(await a.credits.balance()).toBe(741);
   });
 
   it('a zero-credit charge records usage but no debit row', async () => {
