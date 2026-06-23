@@ -167,7 +167,7 @@ function FilterTabs({
               borderBottom: active ? '2px solid var(--accent-primary)' : '2px solid transparent',
               marginBottom: -1,
               cursor: 'pointer',
-              transition: 'color 80ms ease-out',
+              transition: 'color var(--dur-2) var(--ease-out), border-bottom-color var(--dur-2) var(--ease-out)',
               display: 'flex',
               alignItems: 'center',
               gap: 'var(--space-2)',
@@ -220,12 +220,16 @@ function Th({ children, style }: { children?: React.ReactNode; style?: React.CSS
 }
 
 function RunRow({ run, even }: { run: RunListItem; even: boolean }) {
+  const baseBg = even ? 'var(--data-surface)' : 'var(--data-surface-alt)';
   return (
     <tr
       style={{
-        backgroundColor: even ? 'var(--data-surface)' : 'var(--data-surface-alt)',
+        backgroundColor: baseBg,
         borderBottom: '1px solid var(--data-border)',
+        transition: 'background-color var(--dur-2) var(--ease-out)',
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = baseBg; }}
     >
       <td
         style={{
@@ -266,7 +270,9 @@ function RunRow({ run, even }: { run: RunListItem; even: boolean }) {
       <td style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'right' }}>
         <Link
           href={`/runs/${run.runId}`}
+          className="attest-lift"
           style={{
+            display: 'inline-block',
             fontFamily: 'var(--font-sans)',
             fontSize: 'var(--text-xs)',
             color: 'var(--text-muted)',
@@ -275,9 +281,10 @@ function RunRow({ run, even }: { run: RunListItem; even: boolean }) {
             borderRadius: 'var(--radius-clay-sm)',
             backgroundColor: 'var(--surface-elevated)',
             boxShadow: 'var(--clay-shadow)',
-            transition: 'box-shadow 80ms ease-out, color 80ms ease-out',
             whiteSpace: 'nowrap',
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
         >
           View
         </Link>

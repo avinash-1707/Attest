@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface ModalProps {
@@ -13,6 +13,12 @@ interface ModalProps {
 
 export function Modal({ open, onClose, title, children, width = 480 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  // Keep the modal mounted through its exit animation, then unmount.
+  const [rendered, setRendered] = useState(open);
+
+  useEffect(() => {
+    if (open) setRendered(true);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -30,11 +36,13 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   return (
     <div
       role="presentation"
+      className={open ? 'attest-overlay-in' : 'attest-overlay-out'}
+      onAnimationEnd={(e) => { if (e.target === e.currentTarget && !open) setRendered(false); }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -44,6 +52,8 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
         justifyContent: 'center',
         padding: 'var(--space-6)',
         backgroundColor: 'rgba(17, 13, 11, 0.72)',
+        backdropFilter: 'blur(2px)',
+        WebkitBackdropFilter: 'blur(2px)',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -53,6 +63,7 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
+        className={open ? 'attest-dialog-in' : 'attest-dialog-out'}
         style={{
           width: '100%',
           maxWidth: width,

@@ -87,7 +87,8 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         backgroundColor: active ? 'var(--surface-elevated)' : 'transparent',
         boxShadow: active ? 'var(--clay-shadow)' : 'none',
         borderLeft: active ? '2px solid var(--accent-primary)' : '2px solid transparent',
-        transition: 'background-color 120ms ease-out, color 120ms ease-out, box-shadow 120ms ease-out',
+        transition:
+          'background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), border-left-color var(--dur-2) var(--ease-out)',
       }}
       onMouseEnter={(e) => {
         if (!active) {
@@ -113,6 +114,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          transition: 'color var(--dur-2) var(--ease-out)',
         }}
       >
         {item.icon}

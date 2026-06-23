@@ -204,7 +204,7 @@ function AttestationCard({ attestation }: { attestation: Attestation }) {
   const colors = verdictColors[attestation.status] ?? verdictColors['inconclusive'];
 
   return (
-    <Card>
+    <Card className="attest-enter">
       <CardHeader>Attestation</CardHeader>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
         <div
@@ -254,7 +254,7 @@ function AttestationCard({ attestation }: { attestation: Attestation }) {
 
 function FailureDossier({ failure }: { failure: Failure }) {
   return (
-    <Card>
+    <Card className="attest-enter" style={{ ['--stagger-index']: 1 } as React.CSSProperties}>
       <CardHeader>
         <span style={{ color: 'var(--color-fail-text)' }}>Failure Analysis</span>
       </CardHeader>
@@ -352,7 +352,7 @@ function FailureDossier({ failure }: { failure: Failure }) {
 
 function StepsCard({ steps }: { steps: AttestationStep[] }) {
   return (
-    <Card>
+    <Card className="attest-enter" style={{ ['--stagger-index']: 2 } as React.CSSProperties}>
       <CardHeader>Steps ({steps.length})</CardHeader>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         {steps.map((step) => (
@@ -416,7 +416,7 @@ function EvidenceSection({ items }: { items: EvidenceRefView[] }) {
   const others = items.filter((e) => e.kind !== 'screenshot' && e.kind !== 'dom_snapshot');
 
   return (
-    <Card>
+    <Card className="attest-enter" style={{ ['--stagger-index']: 3 } as React.CSSProperties}>
       <CardHeader>Evidence ({items.length})</CardHeader>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         {screenshots.length > 0 && (

@@ -182,8 +182,13 @@ function CredentialRow({
   even: boolean;
   onDelete: () => void;
 }) {
+  const baseBg = even ? 'var(--data-surface)' : 'var(--data-surface-alt)';
   return (
-    <tr style={{ backgroundColor: even ? 'var(--data-surface)' : 'var(--data-surface-alt)', borderBottom: '1px solid var(--data-border)' }}>
+    <tr
+      style={{ backgroundColor: baseBg, borderBottom: '1px solid var(--data-border)', transition: 'background-color var(--dur-2) var(--ease-out)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = baseBg; }}
+    >
       <td style={{ padding: 'var(--space-3) var(--space-4)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)', color: 'var(--data-text)' }}>
         {credential.name}
       </td>

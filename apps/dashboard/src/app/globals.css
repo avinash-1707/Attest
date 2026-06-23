@@ -87,6 +87,17 @@
   --radius-clay-lg: 20px;
   --radius-full: 9999px;
 
+  /* Motion - one easing/duration system, consumed everywhere */
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --dur-1: 80ms;
+  --dur-2: 140ms;
+  --dur-3: 200ms;
+  --dur-4: 280ms;
+
   /* Oxblood / rust primitives */
   --oxblood-950: #2E0E0A;
   --oxblood-900: #3E1511;
@@ -289,15 +300,93 @@ body {
 /* ---- Interactive clay element motion ---- */
 .clay-interactive {
   transition:
-    box-shadow 80ms ease-out,
-    background-color 80ms ease-out,
-    transform 80ms ease-out;
+    box-shadow var(--dur-1) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
 }
 
-.clay-interactive:active {
-  transform: translateY(1px);
+.clay-interactive:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
   box-shadow: var(--clay-shadow-pressed);
 }
+
+/* ---- Hover lift: clickable rows, cards, links ---- */
+.attest-lift {
+  transition:
+    box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out),
+    background-color var(--dur-2) var(--ease-out);
+}
+
+.attest-lift:hover {
+  transform: translateY(-1px);
+  /* inline resting box-shadow (Card, links) would otherwise win over this rule */
+  box-shadow: var(--clay-shadow-hover) !important;
+}
+
+.attest-lift:active {
+  transform: translateY(0);
+}
+
+/* ---- Entrance: fade + rise + materialize (Jakub blur signal) ---- */
+@keyframes attest-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.attest-enter {
+  animation: attest-fade-up var(--dur-3) var(--ease-out) both;
+  animation-delay: calc(var(--stagger-index, 0) * 40ms);
+}
+
+/* ---- Modal overlay + dialog ---- */
+@keyframes attest-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes attest-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes attest-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes attest-dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+.attest-overlay-in { animation: attest-overlay-in var(--dur-3) var(--ease-out) both; }
+.attest-overlay-out { animation: attest-overlay-out var(--dur-2) var(--ease-in) both; }
+.attest-dialog-in { animation: attest-dialog-in var(--dur-4) var(--ease-out-expo) both; }
+.attest-dialog-out { animation: attest-dialog-out var(--dur-2) var(--ease-in) both; }
 
 /* ---- Reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
@@ -306,12 +395,13 @@ body {
   *::after {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
   }
 }
 
 /* ---- State transition utility ---- */
 .transition-state {
-  transition: opacity 150ms ease-out;
+  transition: opacity var(--dur-3) var(--ease-out);
 }
 
 /* ---- Spinner keyframe ---- */

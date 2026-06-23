@@ -119,7 +119,7 @@ export function AppsView() {
 
 function AppRow({ app, onEdit, onDelete }: { app: AppView; onEdit: () => void; onDelete: () => void }) {
   return (
-    <Card padding="none">
+    <Card padding="none" className="attest-lift">
       <div
         style={{
           display: 'flex',
@@ -172,7 +172,7 @@ function AppRow({ app, onEdit, onDelete }: { app: AppView; onEdit: () => void; o
               backgroundColor: 'var(--surface-elevated)',
               boxShadow: 'var(--clay-shadow)',
               whiteSpace: 'nowrap',
-              transition: 'box-shadow 80ms ease-out, color 80ms ease-out',
+              transition: 'box-shadow var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out)',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = 'var(--clay-shadow-hover)';

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
 import { Sidebar } from './Sidebar';
 import { Spinner } from '@/components/ui/Spinner';
@@ -14,6 +14,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   const activeOrgId = (session?.session as Record<string, unknown> | undefined)
     ?.activeOrganizationId as string | null | undefined;
@@ -68,7 +69,9 @@ export function AppShell({ children }: AppShellProps) {
           overflow: 'auto',
         }}
       >
-        {children}
+        <div key={pathname} className="attest-enter">
+          {children}
+        </div>
       </main>
     </div>
   );
