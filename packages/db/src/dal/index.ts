@@ -1,12 +1,16 @@
 import type { Db } from './types';
-import { forOrg, resolveServiceKey } from './org-scope';
+import { forOrg, resolveServiceKey, resolveOrgByDodoCustomer, recordWebhookEvent } from './org-scope';
 
 // The tenant-scoped data-access layer [arch §5.2]. The only entry points: forOrg(orgId) for all
-// tenant data, and resolveServiceKey(hash) for auth (the org is the lookup's result, not input).
+// tenant data, and the few legitimate non-org lookups whose RESULT is the org (service-key auth,
+// Dodo webhook fulfillment) plus the system-scoped webhook dedupe.
 export function createDataAccess(db: Db) {
   return {
     forOrg: (orgId: string) => forOrg(db, orgId),
     resolveServiceKey: (keyHash: string) => resolveServiceKey(db, keyHash),
+    resolveOrgByDodoCustomer: (dodoCustomerId: string) => resolveOrgByDodoCustomer(db, dodoCustomerId),
+    recordWebhookEvent: (input: { webhookId: string; eventType: string; status: string }) =>
+      recordWebhookEvent(db, input),
   };
 }
 
@@ -22,3 +26,4 @@ export type { UsageEvent } from './usage.repo';
 export type { ModelKey } from './model-key.repo';
 export type { AppCredential } from './app-credential.repo';
 export type { CreditLedger } from './credit-ledger.repo';
+export type { OrgBilling } from './org-billing.repo';

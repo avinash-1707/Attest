@@ -10,9 +10,9 @@ import {
   type DataAccess,
   type SecretCipher,
 } from '@attest/db';
-import { RUN_QUEUE, type AgentRole, type BillingGate } from '@attest/contracts';
+import { RUN_QUEUE, type AgentRole, type BillingGate, type BillingWebhookHandler } from '@attest/contracts';
 import type { EvidenceStore } from '@attest/core';
-import { loadBillingGate } from '../billing/load';
+import { loadBillingGate, loadBillingWebhookHandler } from '../billing/load';
 import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
 import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
 import type { BackendConfig } from './config';
@@ -51,6 +51,8 @@ export interface BackendDeps {
   modelDefaults: Record<AgentRole, string>;
   // Credit gate at enqueue; no-op in the OSS build [tech-arch §13.4].
   gate: BillingGate;
+  // Inbound Dodo webhook handler; 404 no-op in the OSS build [tech-arch §13.5].
+  webhook: BillingWebhookHandler;
   closeDb: () => Promise<void>;
 }
 
@@ -91,6 +93,24 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
     requireBilling: config.requireBilling,
     dal,
   });
+  const webhook = await loadBillingWebhookHandler({
+    enabled: config.billingEnabled,
+    requireBilling: config.requireBilling,
+    webhookKey: config.dodoWebhookKey,
+    dal,
+  });
 
-  return { config, dal, cipher, queue, redis, auth, store, modelDefaults: config.modelDefaults, gate, closeDb };
+  return {
+    config,
+    dal,
+    cipher,
+    queue,
+    redis,
+    auth,
+    store,
+    modelDefaults: config.modelDefaults,
+    gate,
+    webhook,
+    closeDb,
+  };
 }

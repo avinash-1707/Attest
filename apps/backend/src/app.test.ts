@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildApp } from './app';
 import type { BackendDeps } from './platform/deps';
-import { allowAllGate } from './billing/load';
+import { allowAllGate, noopWebhookHandler } from './billing/load';
 
 const MODELS = { planner: 'm/p', judge: 'm/j', resolution: 'm/r' };
 
@@ -9,7 +9,7 @@ let getSession: ReturnType<typeof vi.fn>;
 let add: ReturnType<typeof vi.fn>;
 let resolveServiceKey: ReturnType<typeof vi.fn>;
 
-function makeDeps(opts: { appIds?: string[] } = {}): BackendDeps {
+function makeDeps(opts: { appIds?: string[]; webhook?: BackendDeps['webhook'] } = {}): BackendDeps {
   add = vi.fn(async () => undefined);
   getSession = vi.fn(async () => null);
   resolveServiceKey = vi.fn(async () => ({
@@ -34,6 +34,7 @@ function makeDeps(opts: { appIds?: string[] } = {}): BackendDeps {
     auth: { handler: async () => new Response(null), api: { getSession } },
     modelDefaults: MODELS,
     gate: allowAllGate,
+    webhook: opts.webhook ?? noopWebhookHandler,
     closeDb: async () => undefined,
   } as unknown as BackendDeps;
 }
@@ -194,6 +195,58 @@ describe('CSRF guard (cookie/session door)', () => {
     const app = buildApp(makeDeps());
     const res = await app.inject({ method: 'GET', url: '/health', headers: { cookie, origin: 'https://evil.test' } });
     expect(res.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+describe('Dodo webhook route [tech-arch §13.5]', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('passes the raw body + signature headers to the handler and returns its status', async () => {
+    const handle = vi.fn(async () => ({ statusCode: 200 }));
+    const app = buildApp(makeDeps({ webhook: { handle } }));
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/dodo',
+      headers: {
+        'content-type': 'application/json',
+        'webhook-id': 'wh_1',
+        'webhook-signature': 'v1,sig',
+        'webhook-timestamp': '123',
+      },
+      payload: '{"type":"subscription.renewed"}',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(handle).toHaveBeenCalledWith('{"type":"subscription.renewed"}', {
+      'webhook-id': 'wh_1',
+      'webhook-signature': 'v1,sig',
+      'webhook-timestamp': '123',
+    });
+    await app.close();
+  });
+
+  it('surfaces a 400 from the handler on a bad signature, no Origin/CSRF needed', async () => {
+    const handle = vi.fn(async () => ({ statusCode: 400 }));
+    const app = buildApp(makeDeps({ webhook: { handle } }));
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/dodo',
+      headers: { 'content-type': 'application/json', 'webhook-id': 'wh_1' },
+      payload: '{}',
+    });
+    expect(res.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('404s in the OSS build (no-op handler)', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/dodo',
+      headers: { 'content-type': 'application/json' },
+      payload: '{}',
+    });
+    expect(res.statusCode).toBe(404);
     await app.close();
   });
 });

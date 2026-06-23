@@ -8,13 +8,18 @@ import { registerRunRoutes } from './runs/runs.routes';
 import { registerReadRoutes } from './runs/reads.routes';
 import { registerEvidenceRoutes } from './evidence/evidence.routes';
 import { registerManagementRoutes } from './management/management.routes';
+import { registerWebhookRoutes } from './billing/webhook.routes';
 
 // Assembles the Fastify app from already-constructed deps. Pure wiring, so it builds and can be
 // exercised via app.inject() with no live socket, db, or Redis.
 export function buildApp(deps: BackendDeps): FastifyInstance {
   // Redact credential-bearing headers from request logs so a service key or session cookie can never
   // land in logs [invariant 4]. pino does not log these by default, but the redact makes it enforced.
-  const app = Fastify({ logger: { redact: ['req.headers.authorization', 'req.headers.cookie'] } });
+  const app = Fastify({
+    logger: {
+      redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["webhook-signature"]'],
+    },
+  });
 
   registerErrorHandler(app);
 
@@ -56,6 +61,7 @@ export function buildApp(deps: BackendDeps): FastifyInstance {
   registerReadRoutes(app, deps);
   registerEvidenceRoutes(app, deps);
   registerManagementRoutes(app, deps);
+  registerWebhookRoutes(app, deps);
 
   return app;
 }

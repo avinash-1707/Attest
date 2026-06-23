@@ -34,3 +34,12 @@ export function creditsForRun(input: RunMeterInput, pricing: BillingPricing): nu
   const meteredCostUsd = modelCostUsd + input.browserMinutes * pricing.browserMinuteCostUsd;
   return Math.ceil((meteredCostUsd * pricing.marginMultiplier) / pricing.centValueUsd);
 }
+
+// Credits granted for a payment/subscription, derived from the amount paid (in the smallest currency
+// unit, e.g. cents) at the credit's face value: amountPaidUsd / centValue. This auto-scales with
+// whatever tier or pack the customer bought, so there is no per-product map to maintain; the margin is
+// captured at debit time, not here [tech-arch §13.2, §13.3].
+export function creditsFromAmount(amountMinorUnits: number, pricing: BillingPricing): number {
+  const usd = amountMinorUnits / 100;
+  return Math.round(usd / pricing.centValueUsd);
+}

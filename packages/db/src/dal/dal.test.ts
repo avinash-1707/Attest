@@ -251,3 +251,17 @@ describe('credit ledger [tech-arch §13.4]', () => {
     expect(await dao.forOrg('org_b').credits.balance()).toBe(0);
   });
 });
+
+describe('billing webhook fulfillment [tech-arch §13.5]', () => {
+  it('maps a Dodo customer to its org via org_billing upsert', async () => {
+    await dao.forOrg('org_a').orgBilling.upsert({ dodoCustomerId: 'cus_123', subscriptionStatus: 'active' });
+    expect(await dao.resolveOrgByDodoCustomer('cus_123')).toBe('org_a');
+    expect(await dao.resolveOrgByDodoCustomer('cus_nope')).toBeUndefined();
+    expect((await dao.forOrg('org_a').orgBilling.get())?.subscriptionStatus).toBe('active');
+  });
+
+  it('dedupes a webhook delivery on webhook-id (fresh once, then not)', async () => {
+    expect((await dao.recordWebhookEvent({ webhookId: 'wh_1', eventType: 'subscription.active', status: 'processed' })).fresh).toBe(true);
+    expect((await dao.recordWebhookEvent({ webhookId: 'wh_1', eventType: 'subscription.active', status: 'processed' })).fresh).toBe(false);
+  });
+});

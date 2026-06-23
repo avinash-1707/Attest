@@ -21,6 +21,7 @@
   "dependencies": {
     "@attest/contracts": "workspace:*",
     "@attest/core": "workspace:*",
-    "@attest/db": "workspace:*"
+    "@attest/db": "workspace:*",
+    "dodopayments": "^2.39.1"
   }
 }

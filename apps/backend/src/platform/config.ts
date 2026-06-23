@@ -41,6 +41,9 @@ const base = z.object({
   // requireBilling makes a hosted boot fail closed if @attest/ee is absent, rather than run ungated.
   billingEnabled: z.boolean().default(false),
   requireBilling: z.boolean().default(false),
+  // Dodo Payments Standard-Webhooks signing key, used to verify inbound webhook signatures [tech-arch
+  // §13.5]. Required (with billingEnabled) for the /webhooks/dodo route to verify; never logged.
+  dodoWebhookKey: z.string().min(1).optional(),
 });
 
 // Evidence backend, selected once at start [tech-arch §8], same shape the worker uses so the read
@@ -88,6 +91,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     },
     billingEnabled: env.BILLING_ENABLED === 'true',
     requireBilling: env.REQUIRE_BILLING === 'true',
+    dodoWebhookKey: env.DODO_WEBHOOK_KEY,
   };
 
   if ((env.EVIDENCE_BACKEND ?? 'disk') === 's3') {

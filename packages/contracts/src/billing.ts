@@ -30,6 +30,25 @@ export interface BillingGate {
   assertCanEnqueue(orgId: string): Promise<void>;
 }
 
+// Standard-Webhooks signature headers on an inbound Dodo webhook [tech-arch §13.5].
+export interface WebhookHeaders {
+  'webhook-id': string;
+  'webhook-signature': string;
+  'webhook-timestamp': string;
+}
+
+// The HTTP status the webhook route should return. The handler never throws: 200 = processed / deduped
+// / ignored, 400 = bad signature, 5xx = transient processing failure so Dodo retries.
+export interface WebhookResult {
+  statusCode: number;
+}
+
+// Verifies an inbound Dodo webhook and applies its effect (credit grant / subscription status) to the
+// ledger, idempotently. ee/ implements it over the dodopayments SDK; the OSS build wires a 404 no-op.
+export interface BillingWebhookHandler {
+  handle(rawBody: string, headers: WebhookHeaders): Promise<WebhookResult>;
+}
+
 // Thrown by the ee/ gate when an org's balance can't cover the estimated run cost. Defined here (not in
 // the backend) so ee/ throws it without depending on the backend; the backend error handler maps it to
 // a 402 with this code [tech-arch §13.4].
