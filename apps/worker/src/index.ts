@@ -6,15 +6,22 @@ import { runAttestation } from '@attest/core';
 import { loadConfig } from './config';
 import { createDepsFactory } from './adapters';
 import { processRunJob } from './process-job';
+import { loadBillingMeter } from './billing/load';
 
 // apps/worker: the run-execution process. Consumes the run queue, wires the concrete adapters into the
 // pure engine, and persists the attestation [arch §3.4, tech-arch §4, §5, §7]. The backend never
 // launches a browser; a crash here is a failed job, never an API outage [tech-arch §5.2].
 
-function main(): void {
+async function main(): Promise<void> {
   const config = loadConfig();
   const dal = createDataAccess(getDb(config.databaseUrl));
   const depsFactory = createDepsFactory(config);
+  // No-op unless billing is enabled (OSS build never meters); fail-closed if hosted and ee is absent.
+  const meter = await loadBillingMeter({
+    enabled: config.billingEnabled,
+    requireBilling: config.requireBilling,
+    dal,
+  });
 
   const connection = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
 
@@ -23,12 +30,13 @@ function main(): void {
     (job: Job) =>
       processRunJob(job.data, {
         dal,
+        meter,
         attemptsMade: job.attemptsMade,
         // Single source of truth: BullMQ drives retry from job.opts.attempts, so the worker's notion of
         // "final attempt" must read the same value. Absent (producer misconfig) => treat as no-retry
         // (1) so a transient failure resolves the run instead of hanging it [tech-arch §7.5].
         maxAttempts: job.opts.attempts ?? 1,
-        run: async (input, payload) => (await runAttestation(input, depsFactory(payload))).attestation,
+        run: (input, payload) => runAttestation(input, depsFactory(payload)),
       }),
     { connection, concurrency: config.concurrency },
   );
@@ -52,4 +60,7 @@ function main(): void {
   console.log(`worker listening on queue "${RUN_QUEUE}" (concurrency ${config.concurrency})`);
 }
 
-main();
+main().catch((err) => {
+  console.error(`worker failed to start: ${err instanceof Error ? err.message : 'unknown error'}`);
+  process.exit(1);
+});

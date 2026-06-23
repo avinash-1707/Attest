@@ -3,6 +3,7 @@ import { UnrecoverableError } from 'bullmq';
 import { SCHEMA_VERSION, type Attestation, type JobPayload, type RunStatus } from '@attest/contracts';
 import type { DataAccess } from '@attest/db';
 import { processRunJob, EnvironmentRetryError, type JobContext } from './process-job';
+import { noopMeter } from './billing/load';
 
 const JOB: JobPayload = {
   runId: 'run_1',
@@ -75,8 +76,19 @@ function makeDal(opts: { allowlist?: string[]; appExists?: boolean } = {}) {
   return { dal, runs, attestations, evidence, apps };
 }
 
+const METER = { modelCostUsd: 0.08, browserMinutes: 1.5, steps: 2 };
+function runResult(status: RunStatus, overrides: Partial<Attestation> = {}) {
+  return { attestation: attestation(status, overrides), meter: METER };
+}
+
 function ctx(over: Partial<JobContext> & { dal: DataAccess }): JobContext {
-  return { attemptsMade: 0, maxAttempts: 3, run: vi.fn(async () => attestation('passed')), ...over };
+  return {
+    attemptsMade: 0,
+    maxAttempts: 3,
+    meter: noopMeter,
+    run: vi.fn(async () => runResult('passed')),
+    ...over,
+  };
 }
 
 describe('processRunJob', () => {
@@ -114,7 +126,7 @@ describe('processRunJob', () => {
 
   it('retries (no persist) on an environment failure before the budget is spent', async () => {
     const { dal, attestations, runs } = makeDal();
-    const run = vi.fn(async () => attestation('inconclusive'));
+    const run = vi.fn(async () => runResult('inconclusive'));
     await expect(processRunJob(JOB, ctx({ dal, run, attemptsMade: 0, maxAttempts: 3 }))).rejects.toBeInstanceOf(
       EnvironmentRetryError,
     );
@@ -124,7 +136,7 @@ describe('processRunJob', () => {
 
   it('surfaces inconclusive on the final attempt, recording the operational reason', async () => {
     const { dal, attestations, runs } = makeDal();
-    const run = vi.fn(async () => attestation('inconclusive'));
+    const run = vi.fn(async () => runResult('inconclusive'));
     const res = await processRunJob(JOB, ctx({ dal, run, attemptsMade: 2, maxAttempts: 3 }));
     expect(res.status).toBe('inconclusive');
     expect(attestations.save).toHaveBeenCalledWith('run_1', expect.objectContaining({ status: 'inconclusive' }));
@@ -144,7 +156,7 @@ describe('processRunJob', () => {
 
   it('persists a verdict failure (never retried)', async () => {
     const { dal, attestations } = makeDal();
-    const run = vi.fn(async () => attestation('failed'));
+    const run = vi.fn(async () => runResult('failed'));
     const res = await processRunJob(JOB, ctx({ dal, run, attemptsMade: 0 }));
     expect(res.status).toBe('failed');
     expect(attestations.save).toHaveBeenCalledWith('run_1', expect.objectContaining({ status: 'failed' }));
@@ -179,5 +191,28 @@ describe('processRunJob', () => {
     const [, message] = runs.failPermanently.mock.calls[0]!;
     expect(message).not.toContain(JOB.modelConfig.apiKey);
     expect(message).toContain('[redacted]');
+  });
+
+  it('meters a resolved run after completion with the run meter + byok flag [tech-arch §13.2]', async () => {
+    const { dal } = makeDal();
+    const meter = { recordAndDebit: vi.fn(async () => {}) };
+    const res = await processRunJob(JOB, ctx({ dal, meter }));
+    expect(res.status).toBe('passed');
+    expect(meter.recordAndDebit).toHaveBeenCalledWith({
+      orgId: 'org_1',
+      appId: 'app_1',
+      runId: 'run_1',
+      browserMinutes: METER.browserMinutes,
+      steps: METER.steps,
+      modelCostUsd: METER.modelCostUsd,
+      byok: false,
+    });
+  });
+
+  it('does not meter a run rejected before execution (allowlist denial)', async () => {
+    const { dal } = makeDal({ allowlist: ['other.com'] });
+    const meter = { recordAndDebit: vi.fn(async () => {}) };
+    await expect(processRunJob(JOB, ctx({ dal, meter }))).rejects.toBeInstanceOf(UnrecoverableError);
+    expect(meter.recordAndDebit).not.toHaveBeenCalled();
   });
 });

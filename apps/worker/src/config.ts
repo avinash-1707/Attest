@@ -9,6 +9,11 @@ const base = z.object({
   // Override for a local OpenAI-compatible endpoint (Ollama); absent = OpenRouter default [arch §7.2].
   modelBaseUrl: z.string().min(1).optional(),
   concurrency: z.number().int().positive().default(1),
+  // Hosted-tier metering: when enabled, the run-completion meter writes a UsageEvent + credit debit via
+  // ee/billing. OFF for the OSS build (self-hosters never meter) [tech-arch §13]. requireBilling makes a
+  // hosted boot fail closed if @attest/ee is somehow absent, rather than silently run unmetered.
+  billingEnabled: z.boolean().default(false),
+  requireBilling: z.boolean().default(false),
 });
 
 const diskConfig = base.extend({
@@ -35,6 +40,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
     redisUrl: env.REDIS_URL,
     modelBaseUrl: env.MODEL_BASE_URL,
     concurrency: env.WORKER_CONCURRENCY ? Number(env.WORKER_CONCURRENCY) : undefined,
+    billingEnabled: env.BILLING_ENABLED === 'true',
+    requireBilling: env.REQUIRE_BILLING === 'true',
   };
 
   if (backend === 's3') {

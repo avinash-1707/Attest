@@ -5,8 +5,9 @@ import {
   type JobPayload,
   type Attestation,
   type RunStatus,
+  type BillingMeter,
 } from '@attest/contracts';
-import type { RunInput } from '@attest/core';
+import type { RunInput, RunResult } from '@attest/core';
 import type { DataAccess, NewEvidence } from '@attest/db';
 
 // Thrown to let BullMQ retry an environment failure with backoff [tech-arch §7.5]. A plain Error (not
@@ -25,7 +26,10 @@ export interface JobContext {
   // The job's total attempt budget (BullMQ job.opts.attempts), normally MAX_RUN_ATTEMPTS.
   maxAttempts: number;
   // Adapter-wired engine entrypoint; injected so this handler stays free of puppeteer/openai/db drivers.
-  run: (input: RunInput, job: JobPayload) => Promise<Attestation>;
+  run: (input: RunInput, job: JobPayload) => Promise<RunResult>;
+  // Run-completion meter: writes the UsageEvent + credit debit on a resolved run. No-op in the OSS
+  // build [tech-arch §13.2].
+  meter: BillingMeter;
 }
 
 export type JobResult = { status: RunStatus };
@@ -93,9 +97,9 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
     url: job.url,
   };
 
-  let att: Attestation;
+  let runOut: RunResult;
   try {
-    att = await ctx.run(input, job);
+    runOut = await ctx.run(input, job);
   } catch (err) {
     // Worker fault (Chromium crash, adapter throw) [tech-arch §5.1, §5.2]. Retry until the budget is
     // spent; on the final attempt resolve the run so the caller is never left hanging.
@@ -103,6 +107,7 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
     await org.runs.failPermanently(job.runId, summarize(err, job));
     throw err;
   }
+  const att = runOut.attestation;
 
   // Environment failure: retry with backoff before surfacing inconclusive [tech-arch §7.5].
   if (att.status === 'inconclusive' && !isFinal) {
@@ -119,6 +124,19 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
     await org.runs.setError(job.runId, 'inconclusive after retry budget exhausted');
   }
   await org.runs.markCompleted(job.runId, { durationMs: att.durationMs });
+
+  // Meter the resolved run: UsageEvent + credit debit, idempotent on runId so a re-delivery converges
+  // [tech-arch §13.2]. No-op in the OSS build. Runs last; if it throws, the job retries and the
+  // idempotent writes converge rather than double-charging.
+  await ctx.meter.recordAndDebit({
+    orgId: job.orgId,
+    appId: job.appId,
+    runId: job.runId,
+    browserMinutes: runOut.meter.browserMinutes,
+    steps: runOut.meter.steps,
+    modelCostUsd: runOut.meter.modelCostUsd,
+    byok: job.byok,
+  });
 
   return { status: att.status };
 }
