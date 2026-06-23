@@ -4,7 +4,7 @@ import { z } from 'zod';
 // backend that can't open secrets or sign sessions must never bind the port, so DATABASE_URL,
 // REDIS_URL, ATTEST_KEK and BETTER_AUTH_SECRET are all required and loadConfig throws if absent.
 
-const schema = z.object({
+const base = z.object({
   port: z.number().int().positive().default(3000),
   databaseUrl: z.string().min(1),
   redisUrl: z.string().min(1),
@@ -30,10 +30,27 @@ const schema = z.object({
   }),
 });
 
-export type BackendConfig = z.infer<typeof schema>;
+// Evidence backend, selected once at start [tech-arch §8], same shape the worker uses so the read
+// API serves bytes from the store the worker wrote to. Disk (self-hosted) / S3-compatible (hosted).
+const diskConfig = base.extend({
+  evidence: z.object({ backend: z.literal('disk'), root: z.string().min(1) }),
+});
+
+const s3Config = base.extend({
+  evidence: z.object({
+    backend: z.literal('s3'),
+    bucket: z.string().min(1),
+    endpoint: z.string().min(1).optional(),
+    region: z.string().min(1).optional(),
+    accessKeyId: z.string().min(1).optional(),
+    secretAccessKey: z.string().min(1).optional(),
+  }),
+});
+
+export type BackendConfig = z.infer<typeof diskConfig> | z.infer<typeof s3Config>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
-  return schema.parse({
+  const common = {
     port: env.PORT ? Number(env.PORT) : undefined,
     databaseUrl: env.DATABASE_URL,
     redisUrl: env.REDIS_URL,
@@ -55,5 +72,24 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       judge: env.MODEL_DEFAULT_JUDGE,
       resolution: env.MODEL_DEFAULT_RESOLUTION,
     },
+  };
+
+  if ((env.EVIDENCE_BACKEND ?? 'disk') === 's3') {
+    return s3Config.parse({
+      ...common,
+      evidence: {
+        backend: 's3',
+        bucket: env.EVIDENCE_BUCKET,
+        endpoint: env.EVIDENCE_ENDPOINT,
+        region: env.EVIDENCE_REGION,
+        accessKeyId: env.EVIDENCE_ACCESS_KEY_ID,
+        secretAccessKey: env.EVIDENCE_SECRET_ACCESS_KEY,
+      },
+    });
+  }
+
+  return diskConfig.parse({
+    ...common,
+    evidence: { backend: 'disk', root: env.EVIDENCE_ROOT },
   });
 }

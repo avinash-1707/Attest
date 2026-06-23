@@ -11,9 +11,29 @@ import {
   type SecretCipher,
 } from '@attest/db';
 import { RUN_QUEUE, type AgentRole } from '@attest/contracts';
+import type { EvidenceStore } from '@attest/core';
+import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
+import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
 import type { BackendConfig } from './config';
 import { buildAuth, type Auth } from './auth';
 import { createConsoleMailer } from './mailer';
+
+// Read-only here: the backend serves evidence bytes from the same store the worker wrote to
+// [tech-arch §3.4, §8]. Selected once from config; subpath imports pull only the storage SDK.
+function createStore(config: BackendConfig): EvidenceStore {
+  if (config.evidence.backend === 's3') {
+    const e = config.evidence;
+    return createS3EvidenceStore({
+      bucket: e.bucket,
+      ...(e.endpoint ? { endpoint: e.endpoint } : {}),
+      ...(e.region ? { region: e.region } : {}),
+      ...(e.accessKeyId && e.secretAccessKey
+        ? { credentials: { accessKeyId: e.accessKeyId, secretAccessKey: e.secretAccessKey } }
+        : {}),
+    });
+  }
+  return createDiskEvidenceStore({ root: config.evidence.root });
+}
 
 // Composition root: the one place concrete singletons (db pool, Redis, BullMQ queue, cipher, auth)
 // are constructed [tech-arch §8, mirrors apps/worker/adapters.ts]. Built once at boot from validated
@@ -26,6 +46,7 @@ export interface BackendDeps {
   queue: Queue;
   redis: IORedis;
   auth: Auth;
+  store: EvidenceStore;
   modelDefaults: Record<AgentRole, string>;
   closeDb: () => Promise<void>;
 }
@@ -58,5 +79,7 @@ export function createDeps(config: BackendConfig): BackendDeps {
     google: config.google,
   });
 
-  return { config, dal, cipher, queue, redis, auth, modelDefaults: config.modelDefaults, closeDb };
+  const store = createStore(config);
+
+  return { config, dal, cipher, queue, redis, auth, store, modelDefaults: config.modelDefaults, closeDb };
 }
