@@ -52,6 +52,7 @@ export default tseslint.config(
     files: ['packages/core/src/**/*.ts'],
     rules: restrict([
       { group: ['@attest/db', '@attest/db/*'], message: 'core is storage-free; it must not import db.' },
+      { group: ['@attest/ee', '@attest/ee/*'], message: 'core is OSS; billing/ee must never leak into the engine.' },
       { group: [...APP_PACKAGES], message: 'core must not import an app.' },
       { group: [...TRANSPORT_LIBS], message: 'core is transport-free; no HTTP, queue, or MCP imports.' },
     ]),
