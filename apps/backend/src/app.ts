@@ -42,7 +42,17 @@ export function buildApp(deps: BackendDeps): FastifyInstance {
   app.register(async (scope) => {
     scope.addContentTypeParser('application/json', (_req, _payload, done) => done(null, null));
     const handler = toNodeHandler(deps.auth);
+    const allowedOrigins = new Set(deps.config.trustedOrigins);
     scope.all('/api/auth/*', async (req, reply) => {
+      // reply.hijack() detaches Fastify's reply, so @fastify/cors (which sets headers on the Fastify
+      // reply) never reaches this raw response. Mirror its credentialed allow-origin onto reply.raw,
+      // gated on the same trustedOrigins, or the browser blocks the auth response on register/sign-in.
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.has(origin)) {
+        reply.raw.setHeader('access-control-allow-origin', origin);
+        reply.raw.setHeader('access-control-allow-credentials', 'true');
+        reply.raw.setHeader('vary', 'Origin');
+      }
       reply.hijack();
       try {
         await handler(req.raw, reply.raw);
