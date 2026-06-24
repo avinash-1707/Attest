@@ -22,20 +22,22 @@ export interface CreditPack {
   displayName: string;
 }
 
-// Plans. baseCredits chosen against ~estimateCredits (10) per run: Team 2000 ≈ 200 runs/mo,
-// Business 8000 ≈ 800 runs/mo. Adjust with real data; keep the ratio sane (see sanityCheck).
+// Plans. baseCredits chosen against ~estimateCredits (10) per run: Team 2500 ≈ 250 runs/mo ($49),
+// Business 10000 ≈ 1000 runs/mo ($199). Per-credit price stays ~$0.02 (centValue) across plans + packs
+// so margin is consistent; plans differentiate on pool size + features, not a per-credit discount.
+// Adjust with real data; keep the ratio sane (see plans.test.ts band check). Dollar prices live in Dodo.
 export function defaultPlans(env: NodeJS.ProcessEnv = process.env): readonly Plan[] {
   return [
     {
       planId: 'team',
       dodoProductId: env.DODO_PRODUCT_TEAM ?? '',
-      baseCredits: 2000,
+      baseCredits: 2500,
       displayName: 'Team',
     },
     {
       planId: 'business',
       dodoProductId: env.DODO_PRODUCT_BUSINESS ?? '',
-      baseCredits: 8000,
+      baseCredits: 10000,
       displayName: 'Business',
     },
   ];

@@ -303,7 +303,7 @@ export function BillingView() {
               <PlanCard
                 name="Team"
                 planId="team"
-                credits="2,000 credits / month"
+                credits="2,500 credits / month · $49"
                 activePlanId={summary.planId}
                 onSubscribe={handleSubscribe}
                 isPending={checkout.isPending}
@@ -312,7 +312,7 @@ export function BillingView() {
               <PlanCard
                 name="Business"
                 planId="business"
-                credits="8,000 credits / month"
+                credits="10,000 credits / month · $199"
                 activePlanId={summary.planId}
                 onSubscribe={handleSubscribe}
                 isPending={checkout.isPending}

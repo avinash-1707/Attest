@@ -13,7 +13,7 @@ export interface BillingPricing {
   // Conservative pre-flight per-run estimate for the enqueue gate; errs slightly high so a run never
   // starts unpaid [tech-arch §13.4].
   estimateCredits: number;
-  // One-time free-tier grant for a new org (~25 runs). Granted lazily + idempotently on first gate.
+  // One-time free-tier grant for a new org (~10 runs). Granted lazily + idempotently on first gate.
   starterCredits: number;
 }
 
@@ -23,7 +23,7 @@ export function defaultPricing(): BillingPricing {
     marginMultiplier: 1.5,
     browserMinuteCostUsd: 0.02,
     estimateCredits: 10,
-    starterCredits: 250,
+    starterCredits: 100,
   };
 }
 
