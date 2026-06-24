@@ -18,8 +18,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Attest',
-  description: 'QA attestation that verifies user outcomes in a real browser',
+  title: 'Attest — prove your agent\'s work in a real browser',
+  description:
+    'Attest drives a real browser, watches the outcome, and returns an evidence-backed verdict your coding agent can loop on. Open core, self-hostable, hosted when you want it.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

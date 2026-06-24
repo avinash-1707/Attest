@@ -267,28 +267,30 @@
    BASE / RESET STYLES
    ============================================================ */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
 
-body {
-  background-color: var(--surface-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
-  min-height: 100dvh;
+  body {
+    background-color: var(--surface-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    min-height: 100dvh;
+  }
 }
 
 /* ---- Focus ring system ---- */
@@ -402,6 +404,107 @@ body {
 /* ---- State transition utility ---- */
 .transition-state {
   transition: opacity var(--dur-3) var(--ease-out);
+}
+
+/* ---- Marketing link hover (nav, footer) ---- */
+.attest-link {
+  position: relative;
+}
+.attest-link:hover {
+  color: var(--text-primary);
+}
+
+/* ---- Secondary clay button hover lift ---- */
+.attest-secondary-btn:hover {
+  box-shadow: var(--clay-shadow-hover);
+}
+
+/* ============================================================
+   MARKETING MOTION
+   Scroll reveal is transition-based (duration-driven, NOT tied to
+   scroll speed) + IntersectionObserver-gated in JS. Flat-data
+   surfaces animate on entrance only, then sit static [ui-context §9].
+   ============================================================ */
+
+/* ---- Scroll reveal: materialize (opacity + rise + blur, Jakub) ---- */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(6px);
+  transition:
+    opacity 0.56s var(--ease-out-expo),
+    transform 0.56s var(--ease-out-expo),
+    filter 0.56s var(--ease-out-expo);
+  transition-delay: calc(var(--reveal-i, 0) * 70ms);
+  will-change: opacity, transform;
+}
+
+[data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  will-change: auto;
+}
+
+/* ---- Terminal line stream: tighter rise, faster cascade (Jhey) ---- */
+[data-stream-line] {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.32s var(--ease-out),
+    transform 0.32s var(--ease-out);
+  transition-delay: calc(var(--reveal-i, 0) * 80ms);
+}
+[data-stream-line][data-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Nav condense on scroll ---- */
+.attest-nav {
+  transition: box-shadow var(--dur-3) var(--ease-out);
+}
+
+/* ---- Animated active-section underline on nav links ---- */
+.attest-navlink::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  background: var(--accent-primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur-3) var(--ease-out-expo);
+}
+.attest-navlink[data-active]::after {
+  transform: scaleX(1);
+}
+
+/* ---- Instrument grid: faint ruled backdrop (static, no glow/gradient color) ---- */
+.instrument-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--surface-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--surface-border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.18;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 0%, transparent 75%);
+}
+
+/* ---- Reduced motion: everything static + visible, no JS dependency ---- */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-stream-line] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
 }
 
 /* ---- Spinner keyframe ---- */
