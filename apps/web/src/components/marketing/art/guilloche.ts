@@ -1,5 +1,5 @@
 // Engraved-curve generators for the "certified instrument" art system.
-// Pure math, deterministic (no RNG) — safe to call at module load and on the server.
+// Pure math, deterministic (no RNG) - safe to call at module load and on the server.
 // A rosette is a circle whose radius ripples with a sine; layering several with a
 // rotating phase produces the interlaced guilloche seen on certificates and banknotes.
 
@@ -33,7 +33,7 @@ export function rosette({
   return d + 'Z';
 }
 
-// A stack of nested rosettes that drift in radius and phase — one engraved "weave".
+// A stack of nested rosettes that drift in radius and phase - one engraved "weave".
 export function guillocheStack(opts: {
   cx: number;
   cy: number;
@@ -57,7 +57,7 @@ export function guillocheStack(opts: {
   );
 }
 
-// Evenly spaced tick marks around a circle — the instrument-dial scale.
+// Evenly spaced tick marks around a circle - the instrument-dial scale.
 export function dialTicks(opts: {
   cx: number;
   cy: number;

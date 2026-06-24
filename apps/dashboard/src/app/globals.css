@@ -4,7 +4,7 @@
    ATTEST DESIGN TOKENS
    Full system per docs/technical/ui-context.md
    Dark-first. Two surface types only: clay shell + flat data.
-   No hardcoded hex in components — tokens here, consumed there.
+   No hardcoded hex in components - tokens here, consumed there.
    ============================================================ */
 
 /* ---- Tailwind v4 @theme: exposes semantic tokens as Tailwind utilities ---- */

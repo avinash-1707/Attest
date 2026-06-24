@@ -211,7 +211,7 @@ export function ProofCompare() {
               marginTop: 'var(--space-5)',
             }}
           >
-            A verdict, the root cause when it fails, and the evidence to back it — handed
+            A verdict, the root cause when it fails, and the evidence to back it, handed
             straight to the agent. It fixes its own work and you stay out of the loop.
           </p>
         </Reveal>

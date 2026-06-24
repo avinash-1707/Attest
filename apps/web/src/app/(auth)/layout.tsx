@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AttestMark } from '@/components/marketing/AttestMark';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,25 +23,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 'var(--radius-clay-sm)',
-              backgroundColor: 'var(--accent-primary)',
-              boxShadow: 'var(--clay-shadow-accent)',
-              color: 'var(--text-on-accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-md)',
-              fontWeight: 500,
-            }}
-          >
-            @
-          </span>
+          <AttestMark size={32} />
           <span
             style={{
               fontFamily: 'var(--font-sans)',
@@ -50,7 +33,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
               letterSpacing: 'var(--tracking-tight)',
             }}
           >
-            attest
+            Attest
           </span>
         </div>
 

@@ -1,5 +1,5 @@
 // Line-art icons for the three-step flow. Stroke-based, engraved feel, token colors.
-// Accent on the active signal stroke, border tone on structure — matches the seal.
+// Accent on the active signal stroke, border tone on structure - matches the seal.
 
 interface IconProps {
   className?: string;
@@ -15,7 +15,7 @@ const base = {
 const structure = 'var(--surface-border)';
 const signal = 'var(--accent-primary)';
 
-// 01 — State the outcome: a dial target locked on center.
+// 01 - State the outcome: a dial target locked on center.
 export function TargetIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden>
@@ -30,7 +30,7 @@ export function TargetIcon({ className }: IconProps) {
   );
 }
 
-// 02 — Drive a real browser: a window with a tracked cursor path.
+// 02 - Drive a real browser: a window with a tracked cursor path.
 export function BrowserIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden>
@@ -49,7 +49,7 @@ export function BrowserIcon({ className }: IconProps) {
   );
 }
 
-// 03 — Judge and attest: a struck seal with a checkmark.
+// 03 - Judge and attest: a struck seal with a checkmark.
 export function SealIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className} aria-hidden>

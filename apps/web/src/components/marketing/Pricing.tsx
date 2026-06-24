@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Section, Eyebrow } from './Section';
 import { Reveal } from './Reveal';
 
-// Launch pricing placeholders. Dollar amounts are intentionally `$—` until the founder sets them;
+// Launch pricing. Dollar amounts (Team $49 / Business $199) are provisional until finalized;
 // plans sell on the credit allotment. Fill `price` per tier when numbers are locked. Base credits
 // mirror ee/billing/plans.ts (Team 2,000 / Business 8,000); a run costs ~10 credits.
 interface Tier {

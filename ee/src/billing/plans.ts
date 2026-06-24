@@ -44,13 +44,13 @@ export function defaultPlans(env: NodeJS.ProcessEnv = process.env): readonly Pla
 }
 
 // PAYG credit packs (one-time). Credits follow face value (amountPaid / centValue) at the webhook, so
-// no per-pack credit number is stored here — only which Dodo products are packs, for checkout.
+// no per-pack credit number is stored here - only which Dodo products are packs, for checkout.
 export function defaultPacks(env: NodeJS.ProcessEnv = process.env): readonly CreditPack[] {
   return [{ packId: 'pack', dodoProductId: env.DODO_PRODUCT_PACK ?? '', displayName: 'Credit pack' }];
 }
 
 // Resolve the plan a Dodo subscription event belongs to, by its product id. Returns undefined for an
-// unknown product (the webhook then records status but grants nothing — margin-safe).
+// unknown product (the webhook then records status but grants nothing - margin-safe).
 export function resolvePlanByProductId(
   productId: string | undefined,
   plans: readonly Plan[],

@@ -4,7 +4,7 @@ import { Reveal } from './Reveal';
 const faqs = [
   {
     q: 'What exactly is an attestation?',
-    a: 'A structured, evidence-backed verdict on whether a user outcome actually holds. It carries a result (passed, failed, or inconclusive), the root cause when something breaks, a suggested next action, and references to the captured evidence — screenshots, DOM, console, and network.',
+    a: 'A structured, evidence-backed verdict on whether a user outcome actually holds. It carries a result (passed, failed, or inconclusive), the root cause when something breaks, a suggested next action, and references to the captured evidence: screenshots, DOM, console, and network.',
   },
   {
     q: 'Does Attest read my source code?',
@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: 'Which agents and tools does it work with?',
-    a: 'Anything that speaks MCP. Claude Code, Cursor, Codex, Cline, Windsurf, Zed, Gemini CLI, and more — your agent calls attest and loops on the verdict. A dashboard covers the same runs for people who prefer to click.',
+    a: 'Anything that speaks MCP. Claude Code, Cursor, Codex, Cline, Windsurf, Zed, Gemini CLI, and more. Your agent calls attest and loops on the verdict, while a dashboard covers the same runs for people who prefer to click.',
   },
   {
     q: 'How are my credentials and secrets handled?',
@@ -24,15 +24,15 @@ const faqs = [
   },
   {
     q: 'Can I self-host?',
-    a: 'Yes. The core is Apache-2.0 and self-hostable with no functional gap in the verdict loop. Run the whole thing on your own infrastructure, or let the hosted tier carry browsers, scaling, and billing — same codebase, same attestation.',
+    a: 'Yes. The core is Apache-2.0 and self-hostable with no functional gap in the verdict loop. Run the whole thing on your own infrastructure, or let the hosted tier carry browsers, scaling, and billing. Same codebase, same attestation.',
   },
   {
     q: 'What models does it use?',
-    a: 'Models run through OpenRouter, so you can pick the model per role — planner, judge, and resolution fallback — and bring your own key. Most of the verdict is decided by deterministic guards, so model cost stays low.',
+    a: 'Models run through OpenRouter, so you can pick the model per role (planner, judge, and resolution fallback) and bring your own key. Most of the verdict is decided by deterministic guards, so model cost stays low.',
   },
   {
     q: 'What does a run cost?',
-    a: 'The hosted tier is free to start with included credits, then usage-based — you pay per run, not per seat. Bring your own model key and a hosted run is infra-only. Self-hosting is free forever.',
+    a: 'The hosted tier is free to start with included credits, then usage-based: you pay per run, not per seat. Bring your own model key and a hosted run is infra-only. Self-hosting is free forever.',
   },
 ];
 

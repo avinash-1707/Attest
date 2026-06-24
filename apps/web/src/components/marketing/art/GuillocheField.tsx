@@ -4,7 +4,7 @@ import { guillocheStack } from './guilloche';
 interface GuillocheFieldProps {
   className?: string;
   style?: CSSProperties;
-  /** rosette lobe count — odd numbers read as more "engraved" */
+  /** rosette lobe count - odd numbers read as more "engraved" */
   petals?: number;
   rings?: number;
   opacity?: number;

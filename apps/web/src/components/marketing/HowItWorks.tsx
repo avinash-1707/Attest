@@ -26,7 +26,7 @@ const steps: Step[] = [
   {
     n: '03',
     title: 'Judge and attest',
-    body: 'It weighs the outcome and returns a signed verdict: passed, failed, or inconclusive — with the root cause and what to do next.',
+    body: 'It weighs the outcome and returns a signed verdict: passed, failed, or inconclusive, with the root cause and what to do next.',
     Icon: SealIcon,
   },
 ];

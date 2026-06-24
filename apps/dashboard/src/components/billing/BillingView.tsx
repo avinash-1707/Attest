@@ -189,7 +189,7 @@ export function BillingView() {
       ) : !summary?.enabled ? (
         <EmptyState
           title="Self-hosted"
-          description="This deployment runs unlimited — no credits, no billing."
+          description="This deployment runs unlimited. No credits, no billing."
         />
       ) : (
         <>

@@ -60,7 +60,7 @@ export function Integrations() {
           marginBottom: 'var(--space-6)',
         }}
       >
-        Speaks MCP — drops into any agent you already run
+        Speaks MCP. Drops into any agent you already run
       </p>
 
       <div className="attest-marquee-track attest-edge-fade overflow-hidden">

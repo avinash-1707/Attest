@@ -14,7 +14,7 @@ const surfaces: Surface[] = [
   {
     tag: 'For your agent',
     title: 'MCP server',
-    body: 'A thin client your coding agent runs locally. Any MCP host — Claude Code, Cursor, Codex, Cline — calls attest and loops on the verdict until the work is real.',
+    body: 'A thin client your coding agent runs locally. Any MCP host (Claude Code, Cursor, Codex, Cline) calls attest and loops on the verdict until the work is real.',
     Art: McpArt,
   },
   {

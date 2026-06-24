@@ -4,7 +4,7 @@
    ATTEST DESIGN TOKENS
    Full system per docs/technical/ui-context.md
    Dark-first. Two surface types only: clay shell + flat data.
-   No hardcoded hex in components — tokens here, consumed there.
+   No hardcoded hex in components - tokens here, consumed there.
    ============================================================ */
 
 /* ---- Tailwind v4 @theme: exposes semantic tokens as Tailwind utilities ---- */
@@ -530,7 +530,7 @@
    PREMIUM ATMOSPHERE (landing revamp)
    Pattern-based depth only: film grain, engraved guilloche
    hairlines, warm vignette. No colored glow, glass, or gradient
-   fills on elements [ui-context §2] — atmosphere lives behind
+   fills on elements [ui-context §2] - atmosphere lives behind
    content, brand signal stays on the seal + accents.
    ============================================================ */
 
@@ -601,7 +601,7 @@
   animation: attest-draw 1.1s var(--ease-out-expo) 0.25s forwards;
 }
 
-/* ---- Logo marquee (integrations) — seamless, hover to pause ---- */
+/* ---- Logo marquee (integrations) - seamless, hover to pause ---- */
 @keyframes attest-marquee {
   from {
     transform: translateX(0);

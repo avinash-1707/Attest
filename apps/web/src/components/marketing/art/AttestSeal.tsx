@@ -33,7 +33,7 @@ export function AttestSeal({ className = '' }: { className?: string }) {
           />
         ))}
 
-        {/* outer dial — rotates slowly */}
+        {/* outer dial - rotates slowly */}
         <g className="seal-rotate">
           <circle cx={C} cy={C} r={150} fill="none" stroke="var(--surface-border)" strokeWidth={1} />
           {ticks.map((t, i) => (
@@ -97,7 +97,7 @@ export function AttestSeal({ className = '' }: { className?: string }) {
         />
       </svg>
 
-      {/* crisp HTML verdict chip — flat data, color-independent (+ prefix) */}
+      {/* crisp HTML verdict chip - flat data, color-independent (+ prefix) */}
       <div
         className="absolute left-1/2 -translate-x-1/2"
         style={{ bottom: '4%' }}

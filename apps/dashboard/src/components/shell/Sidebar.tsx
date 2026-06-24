@@ -2,6 +2,7 @@ import { SidebarNav } from './SidebarNav';
 import { OrgSwitcher } from './OrgSwitcher';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from './ThemeToggle';
+import { AttestMark } from './AttestMark';
 
 const SIDEBAR_WIDTH = 240;
 
@@ -33,27 +34,7 @@ export function Sidebar() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-clay-sm)',
-              backgroundColor: 'var(--accent-primary)',
-              boxShadow: 'var(--clay-shadow-accent)',
-              color: 'var(--text-on-accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-sm)',
-              fontWeight: 500,
-              letterSpacing: '-0.03em',
-              flexShrink: 0,
-            }}
-          >
-            @
-          </span>
+          <AttestMark size={28} />
           <span
             style={{
               fontFamily: 'var(--font-sans)',

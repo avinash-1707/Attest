@@ -8,7 +8,7 @@ const items = [
   },
   {
     k: 'Tenant isolation',
-    v: 'Every record is org-scoped. There is no cross-tenant query path — isolation holds by construction, not by policy.',
+    v: 'Every record is org-scoped. There is no cross-tenant query path, so isolation holds by construction, not by policy.',
   },
   {
     k: 'Secrets stay secret',
