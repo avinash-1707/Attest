@@ -44,6 +44,14 @@ const base = z.object({
   // Dodo Payments Standard-Webhooks signing key, used to verify inbound webhook signatures [tech-arch
   // §13.5]. Required (with billingEnabled) for the /webhooks/dodo route to verify; never logged.
   dodoWebhookKey: z.string().min(1).optional(),
+  // Dodo Payments API bearer token, used for OUTBOUND calls (checkout sessions, customer portal)
+  // [tech-arch §13.6]. Distinct from the webhook signing key. Required (with billingEnabled) for the
+  // self-serve checkout/portal routes; never logged.
+  dodoApiKey: z.string().min(1).optional(),
+  // Dodo environment for outbound API calls: 'test_mode' for dev/staging, 'live_mode' for production.
+  dodoEnvironment: z.enum(['test_mode', 'live_mode']).default('test_mode'),
+  // The dashboard URL Dodo redirects back to after checkout / from the customer portal [tech-arch §13.6].
+  dashboardUrl: z.string().min(1).optional(),
 });
 
 // Evidence backend, selected once at start [tech-arch §8], same shape the worker uses so the read
@@ -92,6 +100,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     billingEnabled: env.BILLING_ENABLED === 'true',
     requireBilling: env.REQUIRE_BILLING === 'true',
     dodoWebhookKey: env.DODO_WEBHOOK_KEY,
+    dodoApiKey: env.DODO_PAYMENTS_API_KEY,
+    dodoEnvironment: env.DODO_ENVIRONMENT,
+    dashboardUrl: env.DASHBOARD_URL,
   };
 
   if ((env.EVIDENCE_BACKEND ?? 'disk') === 's3') {

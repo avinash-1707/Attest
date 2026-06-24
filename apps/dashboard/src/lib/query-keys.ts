@@ -8,4 +8,5 @@ export const qk = {
   keys: ['keys'] as const,
   modelKeys: ['model-keys'] as const,
   credentials: (appId?: string) => (appId ? (['credentials', appId] as const) : (['credentials'] as const)),
+  billing: ['billing'] as const,
 };

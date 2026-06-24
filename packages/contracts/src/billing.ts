@@ -49,6 +49,37 @@ export interface BillingWebhookHandler {
   handle(rawBody: string, headers: WebhookHeaders): Promise<WebhookResult>;
 }
 
+// Creates hosted Dodo URLs for self-serve billing: a checkout session to subscribe to a plan or buy a
+// credit pack, and a customer-portal link to manage an existing subscription [tech-arch §13.6]. ee/
+// implements it over the dodopayments SDK (needs DODO_API_KEY); the OSS build wires a no-op that throws
+// CheckoutUnavailableError so the route 404s. Plan/product identity stays ee-internal: the OSS caller
+// passes only an opaque planId string it got from its own config-free summary.
+export interface BillingCheckout {
+  // Returns a hosted URL to redirect the user to. `kind` selects a subscription plan or a credit pack.
+  // customerEmail/customerName seed the Dodo customer the first time an org checks out (so the org is
+  // mapped to a customer_id before its first webhook arrives); ignored once a customer exists.
+  createCheckoutSession(input: {
+    orgId: string;
+    kind: 'plan' | 'pack';
+    planId: string;
+    customerEmail?: string;
+    customerName?: string;
+  }): Promise<{ url: string }>;
+  // Returns a hosted customer-portal URL for an org that already has a Dodo customer. Throws
+  // CheckoutUnavailableError when the org has no customer yet.
+  createPortalLink(input: { orgId: string }): Promise<{ url: string }>;
+}
+
+// Thrown by the OSS no-op checkout (billing disabled / ee absent), by the ee/ impl when a plan/pack is
+// unconfigured, and when an org has no Dodo customer yet for a portal link. The backend maps it to 409.
+export class CheckoutUnavailableError extends Error {
+  readonly code = 'checkout_unavailable';
+  constructor(message = 'Billing checkout is not available') {
+    super(message);
+    this.name = 'CheckoutUnavailableError';
+  }
+}
+
 // Thrown by the ee/ gate when an org's balance can't cover the estimated run cost. Defined here (not in
 // the backend) so ee/ throws it without depending on the backend; the backend error handler maps it to
 // a 402 with this code [tech-arch §13.4].

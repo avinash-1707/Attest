@@ -187,3 +187,29 @@ export const appCredentialView = z.object({
   createdAt: z.iso.datetime(),
 });
 export type AppCredentialView = z.infer<typeof appCredentialView>;
+
+// ---------------------------------------------------------------------------
+// Billing: summary read + checkout/portal (hosted tier; ee/ fulfills) [tech-arch §13.6]
+// ---------------------------------------------------------------------------
+
+// Read model for the dashboard billing view. Carries no secret: planId/status are opaque references
+// and balance is the live ledger SUM. `enabled` is false on the OSS/self-hosted build (unlimited, no
+// metering), letting the UI show "unlimited" instead of a meaningless zero balance.
+export const billingSummary = z.object({
+  enabled: z.boolean(),
+  planId: z.string().nullable(),
+  subscriptionStatus: z.string().nullable(),
+  balance: z.number().int(),
+});
+export type BillingSummary = z.infer<typeof billingSummary>;
+
+// Request to open a hosted checkout: subscribe to a plan, or buy a one-time credit pack.
+export const checkoutCreate = z.object({
+  kind: z.enum(['plan', 'pack']),
+  planId: z.string().min(1),
+});
+export type CheckoutCreate = z.infer<typeof checkoutCreate>;
+
+// Response for checkout + portal: a hosted URL the client redirects to.
+export const checkoutSession = z.object({ url: z.string().min(1) });
+export type CheckoutSession = z.infer<typeof checkoutSession>;

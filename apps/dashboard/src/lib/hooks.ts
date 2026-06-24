@@ -8,6 +8,7 @@ import type {
   AppKeyCreate,
   ModelKeyCreate,
   AppCredentialCreate,
+  CheckoutCreate,
 } from '@attest/contracts';
 import { api } from './api';
 import { qk } from './query-keys';
@@ -148,4 +149,19 @@ export function useDeleteCredential() {
     mutationFn: (id: string) => api.deleteCredential(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.credentials() }),
   });
+}
+
+// --- Billing (hosted tier) ---
+export function useBillingSummary() {
+  return useQuery({ queryKey: qk.billing, queryFn: api.getBillingSummary });
+}
+
+// Checkout + portal both return a hosted URL the caller redirects the browser to. We do NOT cache it
+// (it is single-use / short-lived); the component navigates on success.
+export function useCheckout() {
+  return useMutation({ mutationFn: (input: CheckoutCreate) => api.createCheckout(input) });
+}
+
+export function useBillingPortal() {
+  return useMutation({ mutationFn: () => api.getBillingPortal() });
 }

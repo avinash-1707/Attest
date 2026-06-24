@@ -8,6 +8,7 @@ type OrgBillingPatch = {
   dodoCustomerId?: string;
   dodoSubscriptionId?: string;
   subscriptionStatus?: string;
+  planId?: string;
   currentTier?: string;
 };
 

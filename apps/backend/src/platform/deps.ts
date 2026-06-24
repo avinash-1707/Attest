@@ -10,9 +10,15 @@ import {
   type DataAccess,
   type SecretCipher,
 } from '@attest/db';
-import { RUN_QUEUE, type AgentRole, type BillingGate, type BillingWebhookHandler } from '@attest/contracts';
+import {
+  RUN_QUEUE,
+  type AgentRole,
+  type BillingGate,
+  type BillingWebhookHandler,
+  type BillingCheckout,
+} from '@attest/contracts';
 import type { EvidenceStore } from '@attest/core';
-import { loadBillingGate, loadBillingWebhookHandler } from '../billing/load';
+import { loadBillingGate, loadBillingWebhookHandler, loadBillingCheckout } from '../billing/load';
 import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
 import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
 import type { BackendConfig } from './config';
@@ -53,6 +59,8 @@ export interface BackendDeps {
   gate: BillingGate;
   // Inbound Dodo webhook handler; 404 no-op in the OSS build [tech-arch §13.5].
   webhook: BillingWebhookHandler;
+  // Self-serve checkout + portal; 409 no-op in the OSS build [tech-arch §13.6].
+  checkout: BillingCheckout;
   closeDb: () => Promise<void>;
 }
 
@@ -99,6 +107,14 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
     webhookKey: config.dodoWebhookKey,
     dal,
   });
+  const checkout = await loadBillingCheckout({
+    enabled: config.billingEnabled,
+    requireBilling: config.requireBilling,
+    apiKey: config.dodoApiKey,
+    returnUrl: config.dashboardUrl ? `${config.dashboardUrl.replace(/\/+$/, '')}/billing` : undefined,
+    environment: config.dodoEnvironment,
+    dal,
+  });
 
   return {
     config,
@@ -111,6 +127,7 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
     modelDefaults: config.modelDefaults,
     gate,
     webhook,
+    checkout,
     closeDb,
   };
 }

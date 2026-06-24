@@ -16,6 +16,11 @@ import {
   modelKeyView,
   appCredentialCreate,
   appCredentialView,
+  billingSummary,
+  checkoutSession,
+  type BillingSummary,
+  type CheckoutCreate,
+  type CheckoutSession,
   type RunCreate,
   type RunCreated,
   type RunList,
@@ -66,20 +71,32 @@ async function request<T>(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
 
-  if (!res.ok) throw new ApiError(res.status, await readErrorCode(res), `${method} ${path} -> ${res.status}`);
+  if (!res.ok) {
+    const { code, message } = await readError(res);
+    // Prefer the server's human-readable message (e.g. "Billing checkout is not available"); fall back
+    // to the method/path/status string when the body carries none.
+    throw new ApiError(res.status, code, message ?? `${method} ${path} -> ${res.status}`);
+  }
   if (res.status === 204) return undefined as T;
 
   const json: unknown = await res.json();
   return opts.schema ? opts.schema.parse(json) : (json as T);
 }
 
-async function readErrorCode(res: Response): Promise<string> {
+async function readError(res: Response): Promise<{ code: string; message?: string }> {
   try {
-    const body = (await res.json()) as { code?: unknown; error?: { code?: unknown } };
+    const body = (await res.json()) as {
+      code?: unknown;
+      message?: unknown;
+      error?: { code?: unknown };
+    };
     const code = body?.code ?? body?.error?.code;
-    return typeof code === 'string' ? code : 'api_error';
+    return {
+      code: typeof code === 'string' ? code : 'api_error',
+      message: typeof body?.message === 'string' ? body.message : undefined,
+    };
   } catch {
-    return 'api_error';
+    return { code: 'api_error' };
   }
 }
 
@@ -130,4 +147,11 @@ export const api = {
       schema: appCredentialView,
     }),
   deleteCredential: (id: string) => request<void>('DELETE', `/credentials/${encodeURIComponent(id)}`),
+
+  // --- Billing (hosted tier) ---
+  getBillingSummary: () => request<BillingSummary>('GET', '/billing/summary', { schema: billingSummary }),
+  createCheckout: (input: CheckoutCreate) =>
+    request<CheckoutSession>('POST', '/billing/checkout', { body: input, schema: checkoutSession }),
+  getBillingPortal: () =>
+    request<CheckoutSession>('POST', '/billing/portal', { schema: checkoutSession }),
 };

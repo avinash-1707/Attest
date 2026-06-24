@@ -3,6 +3,9 @@ import Link from 'next/link';
 import { Section, Eyebrow } from './Section';
 import { Reveal } from './Reveal';
 
+// Launch pricing placeholders. Dollar amounts are intentionally `$—` until the founder sets them;
+// plans sell on the credit allotment. Fill `price` per tier when numbers are locked. Base credits
+// mirror ee/billing/plans.ts (Team 2,000 / Business 8,000); a run costs ~10 credits.
 interface Tier {
   name: string;
   price: string;
@@ -23,33 +26,48 @@ const tiers: Tier[] = [
     features: [
       'Unlimited runs',
       'Full attestation + evidence',
-      'Bring your own models (BYOK)',
+      'Bring your own models',
       'MCP server + dashboard',
       'Apache-2.0, no feature gate',
     ],
     cta: { label: 'View on GitHub', href: 'https://github.com' },
   },
   {
-    name: 'Hosted',
-    price: 'Free',
-    cadence: 'to start',
-    blurb: 'Managed browsers and scaling. Zero infra to run.',
+    name: 'Team',
+    price: '$—',
+    cadence: 'per month',
+    blurb: 'Managed browsers and scaling for a team shipping daily.',
     features: [
-      'Starter credits included',
+      '2,000 credits / month',
       'Managed Chromium + autoscaling',
       'Live dashboard + evidence storage',
-      'Same engine, both surfaces',
+      'Pay-as-you-go top-ups',
       'Email support',
     ],
-    cta: { label: 'Start attesting free', href: '/sign-up' },
+    cta: { label: 'Start attesting', href: '/sign-up' },
+    footnote: '≈ 200 runs / month included. Extra credits are pay-as-you-go.',
+  },
+  {
+    name: 'Business',
+    price: '$—',
+    cadence: 'per month',
+    blurb: 'More headroom and faster turnaround for heavier pipelines.',
+    features: [
+      '8,000 credits / month',
+      'Priority run queue',
+      'Extended evidence retention',
+      'Pay-as-you-go top-ups',
+      'Priority support',
+    ],
+    cta: { label: 'Start attesting', href: '/sign-up' },
     featured: true,
-    footnote: 'Then usage-based credits. Pay only for runs you make.',
+    footnote: '≈ 800 runs / month included. Extra credits are pay-as-you-go.',
   },
   {
     name: 'Enterprise',
     price: 'Custom',
     cadence: "let's talk",
-    blurb: 'For teams that need control, scale, and a contract.',
+    blurb: 'Control, scale, and a contract for the whole org.',
     features: [
       'SSO + roles',
       'Private cloud or self-host support',
@@ -80,14 +98,14 @@ function CardShell({ tier, children }: { tier: Tier; children: ReactNode }) {
     backgroundColor: 'var(--surface-raised)',
     borderRadius: 'var(--radius-clay-md)',
     boxShadow: 'var(--clay-shadow)',
-    padding: 'var(--space-8)',
+    padding: 'var(--space-6)',
     border: tier.featured ? '1px solid var(--accent-primary)' : '1px solid transparent',
   };
   return (
     <div className="relative flex flex-col" style={style}>
       {tier.featured && (
         <span
-          className="absolute right-6 top-0 -translate-y-1/2 uppercase"
+          className="absolute right-5 top-0 -translate-y-1/2 uppercase"
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 'var(--text-2xs)',
@@ -99,7 +117,7 @@ function CardShell({ tier, children }: { tier: Tier; children: ReactNode }) {
             boxShadow: 'var(--clay-shadow-accent)',
           }}
         >
-          Recommended
+          Popular
         </span>
       )}
       {children}
@@ -123,7 +141,7 @@ export function Pricing() {
             marginTop: 'var(--space-4)',
           }}
         >
-          Start free. Pay only for proof.
+          Pay for proof, not for seats.
         </h2>
         <p
           style={{
@@ -133,12 +151,12 @@ export function Pricing() {
             marginTop: 'var(--space-4)',
           }}
         >
-          Self-host the open core for nothing, or let us run the browsers. No seats, no
-          minimums — you pay for verdicts, not for sitting still.
+          Self-host the open core for nothing, or let us run the browsers. Each plan includes a monthly
+          pool of credits; need more, top up as you go.
         </p>
       </Reveal>
 
-      <div className="mt-14 grid items-start gap-5 lg:grid-cols-3">
+      <div className="mt-14 grid items-start gap-5 md:grid-cols-2 lg:grid-cols-4">
         {tiers.map((t, i) => (
           <Reveal key={t.name} index={i}>
             <CardShell tier={t}>
@@ -158,7 +176,7 @@ export function Pricing() {
                 <span
                   style={{
                     fontFamily: 'var(--font-sans)',
-                    fontSize: 'clamp(2.2rem, 4vw, 2.8rem)',
+                    fontSize: 'clamp(1.9rem, 3.4vw, 2.4rem)',
                     fontWeight: 700,
                     letterSpacing: 'var(--tracking-tight)',
                     color: 'var(--text-primary)',
@@ -167,18 +185,16 @@ export function Pricing() {
                 >
                   {t.price}
                 </span>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-                  {t.cadence}
-                </span>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>{t.cadence}</span>
               </div>
 
               <p
                 style={{
-                  fontSize: 'var(--text-base)',
+                  fontSize: 'var(--text-sm)',
                   lineHeight: 1.55,
                   color: 'var(--text-secondary)',
                   marginTop: 'var(--space-4)',
-                  minHeight: '2.8em',
+                  minHeight: '3.4em',
                 }}
               >
                 {t.blurb}
@@ -195,25 +211,21 @@ export function Pricing() {
                   fontFamily: 'var(--font-sans)',
                   fontSize: 'var(--text-md)',
                   fontWeight: 600,
-                  padding: '12px 20px',
+                  padding: '11px 18px',
                   borderRadius: 'var(--radius-clay-sm)',
                 }}
               >
                 {t.cta.label}
               </Link>
 
-              <hr className="attest-rule" style={{ margin: 'var(--space-6) 0' }} />
+              <hr className="attest-rule" style={{ margin: 'var(--space-5) 0' }} />
 
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-1 flex-col gap-3">
                 {t.features.map((f) => (
                   <li
                     key={f}
                     className="flex gap-3"
-                    style={{
-                      fontSize: 'var(--text-sm)',
-                      lineHeight: 1.5,
-                      color: 'var(--text-secondary)',
-                    }}
+                    style={{ fontSize: 'var(--text-sm)', lineHeight: 1.5, color: 'var(--text-secondary)' }}
                   >
                     <Check />
                     <span>{f}</span>

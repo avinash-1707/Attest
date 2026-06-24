@@ -9,6 +9,7 @@ import { registerReadRoutes } from './runs/reads.routes';
 import { registerEvidenceRoutes } from './evidence/evidence.routes';
 import { registerManagementRoutes } from './management/management.routes';
 import { registerWebhookRoutes } from './billing/webhook.routes';
+import { registerBillingRoutes } from './billing/billing.routes';
 
 // Assembles the Fastify app from already-constructed deps. Pure wiring, so it builds and can be
 // exercised via app.inject() with no live socket, db, or Redis.
@@ -62,6 +63,7 @@ export function buildApp(deps: BackendDeps): FastifyInstance {
   registerEvidenceRoutes(app, deps);
   registerManagementRoutes(app, deps);
   registerWebhookRoutes(app, deps);
+  registerBillingRoutes(app, deps);
 
   return app;
 }

@@ -63,6 +63,9 @@ export const orgBilling = pgTable('org_billing', {
   dodoSubscriptionId: text('dodo_subscription_id'),
   // 'active' | 'on_hold' | 'failed' | 'cancelled' | 'expired'
   subscriptionStatus: text('subscription_status'),
+  // Our-vocabulary plan id (e.g. 'team' | 'business'), resolved from the Dodo product_id at webhook
+  // time [tech-arch §13.3]. Distinct from current_tier, which keeps the raw Dodo product_id for audit.
+  planId: text('plan_id'),
   currentTier: text('current_tier'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
