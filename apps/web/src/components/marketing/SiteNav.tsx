@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Wordmark } from './Wordmark';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const links = [
   { href: '#how', id: 'how', label: 'How it works' },
@@ -87,6 +88,7 @@ export function SiteNav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/sign-in"
             className="hidden sm:inline-flex items-center clay-interactive attest-link"

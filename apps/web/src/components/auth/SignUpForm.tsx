@@ -7,6 +7,8 @@ import { signUp, signIn } from '@/lib/auth-client';
 import { DASHBOARD_URL } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 export function SignUpForm() {
@@ -110,9 +112,8 @@ export function SignUpForm() {
           help="Minimum 8 characters."
           required
         >
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
@@ -121,6 +122,7 @@ export function SignUpForm() {
             required
             disabled={loading}
           />
+          {password && <PasswordStrength password={password} />}
         </Field>
 
         {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}

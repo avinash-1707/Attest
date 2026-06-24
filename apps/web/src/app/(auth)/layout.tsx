@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { AttestMark } from '@/components/marketing/AttestMark';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,19 +24,26 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           gap: 'var(--space-8)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <AttestMark size={32} />
-          <span
-            style={{
-              fontFamily: 'var(--font-sans)',
-              fontSize: 'var(--text-xl)',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              letterSpacing: 'var(--tracking-tight)',
-            }}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+          <Link
+            href="/"
+            aria-label="Attest home"
+            style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', textDecoration: 'none' }}
           >
-            Attest
-          </span>
+            <AttestMark size={32} />
+            <span
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-xl)',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                letterSpacing: 'var(--tracking-tight)',
+              }}
+            >
+              Attest
+            </span>
+          </Link>
+          <ThemeToggle />
         </div>
 
         <div

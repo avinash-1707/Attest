@@ -6,6 +6,7 @@ import { signIn } from '@/lib/auth-client';
 import { DASHBOARD_URL } from '@/lib/env';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
+import { PasswordInput } from '@/components/ui/PasswordInput';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
 export function SignInForm() {
@@ -90,9 +91,8 @@ export function SignInForm() {
         </Field>
 
         <Field label="Password" htmlFor="password" required>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
