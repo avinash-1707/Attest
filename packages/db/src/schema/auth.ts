@@ -14,6 +14,11 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  // The org this user last had active, persisted per-user so a returning user reopens their last
+  // workspace even after the session row expires (session.activeOrganizationId is session-scoped and
+  // resets on a fresh login). Re-validated against current membership at resolve time, never trusted
+  // blindly. Written by the session-update hook whenever setActive succeeds [auth/active-org.ts].
+  lastActiveOrganizationId: text("last_active_organization_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

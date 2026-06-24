@@ -17,8 +17,7 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const activeOrgId = (session?.session as Record<string, unknown> | undefined)
-    ?.activeOrganizationId as string | null | undefined;
+  const activeOrgId = session?.session.activeOrganizationId;
 
   useEffect(() => {
     if (isPending) return;
@@ -71,7 +70,7 @@ export function AppShell({ children }: AppShellProps) {
           overflow: 'auto',
         }}
       >
-        <div key={pathname} className="attest-enter">
+        <div key={pathname} className="attest-enter" style={{ minHeight: '100%' }}>
           {children}
         </div>
       </main>

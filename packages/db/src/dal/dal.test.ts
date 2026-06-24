@@ -282,3 +282,62 @@ describe('billing webhook fulfillment [tech-arch §13.5]', () => {
     expect((await dao.recordWebhookEvent({ webhookId: 'wh_1', eventType: 'subscription.active', status: 'processed' })).fresh).toBe(false);
   });
 });
+
+describe('default-workspace resolution [arch §6.1, invariant 3]', () => {
+  // Own db so we can seed user + member rows (the shared freshDataAccess seeds only orgs). org_a and
+  // org_b already exist via migrate + this seed; we add memberships with explicit join times.
+  async function freshWithUser() {
+    const db = drizzle(new PGlite(), { schema });
+    await migrate(db, { migrationsFolder: 'migrations' });
+    await db.insert(schema.organization).values([
+      { id: 'org_a', name: 'A', slug: 'a', createdAt: new Date() },
+      { id: 'org_b', name: 'B', slug: 'b', createdAt: new Date() },
+    ]);
+    await db.insert(schema.user).values({ id: 'user_1', name: 'U', email: 'u@test.com' });
+    const dal = createDataAccess(db as unknown as Parameters<typeof createDataAccess>[0]);
+    return { db, dal };
+  }
+
+  async function addMember(
+    db: Awaited<ReturnType<typeof freshWithUser>>['db'],
+    orgId: string,
+    joinedAtIso: string,
+  ) {
+    await db.insert(schema.member).values({
+      id: `mem_${orgId}`,
+      organizationId: orgId,
+      userId: 'user_1',
+      createdAt: new Date(joinedAtIso),
+    });
+  }
+
+  it('returns memberships oldest-joined first (drives the resolver default)', async () => {
+    const { db, dal } = await freshWithUser();
+    await addMember(db, 'org_b', '2025-06-01');
+    await addMember(db, 'org_a', '2024-01-01');
+    const memberships = await dal.getUserOrgMemberships('user_1');
+    expect(memberships.map((m) => m.organizationId)).toEqual(['org_a', 'org_b']);
+  });
+
+  it('returns no memberships for a user who belongs to none', async () => {
+    const { dal } = await freshWithUser();
+    expect(await dal.getUserOrgMemberships('user_1')).toEqual([]);
+  });
+
+  it('round-trips and overwrites the durable last-active pointer', async () => {
+    const { dal } = await freshWithUser();
+    expect(await dal.getUserLastActiveOrg('user_1')).toBeNull();
+    await dal.setUserLastActiveOrg('user_1', 'org_b');
+    expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_b');
+    await dal.setUserLastActiveOrg('user_1', 'org_a');
+    expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_a');
+  });
+
+  it('no-ops the durable write when the value is unchanged (rolling-refresh path)', async () => {
+    const { dal } = await freshWithUser();
+    await dal.setUserLastActiveOrg('user_1', 'org_a');
+    // Re-persisting the same value must not throw and must leave the pointer intact.
+    await dal.setUserLastActiveOrg('user_1', 'org_a');
+    expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_a');
+  });
+});

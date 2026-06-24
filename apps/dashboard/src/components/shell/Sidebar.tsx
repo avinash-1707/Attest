@@ -58,7 +58,7 @@ export function Sidebar() {
         style={{
           flex: 1,
           overflow: 'auto',
-          padding: `var(--space-3) var(--space-3)`,
+          padding: `var(--space-3) var(--space-4)`,
           display: 'flex',
           flexDirection: 'column',
         }}

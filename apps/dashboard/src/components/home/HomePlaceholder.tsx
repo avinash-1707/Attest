@@ -6,6 +6,7 @@ import { useRuns } from '@/lib/hooks';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
 import type { BadgeStatus } from '@/components/ui/Badge';
 
@@ -21,35 +22,16 @@ export function HomePlaceholder() {
     <div
       style={{
         padding: 'var(--space-8)',
-        maxWidth: 800,
+        maxWidth: 800, /* standard content width; wide table pages use 900 */
         display: 'flex',
         flexDirection: 'column',
         gap: 'var(--space-8)',
       }}
     >
-      <div>
-        <h1
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-2xl)',
-            fontWeight: 600,
-            color: 'var(--text-primary)',
-            letterSpacing: 'var(--tracking-tight)',
-            marginBottom: 'var(--space-2)',
-          }}
-        >
-          Welcome, {firstName}
-        </h1>
-        <p
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-base)',
-            color: 'var(--text-muted)',
-          }}
-        >
-          Recent attestation runs are shown below.
-        </p>
-      </div>
+      <PageHeader
+        title={`Welcome, ${firstName}`}
+        description="Recent attestation runs are shown below."
+      />
 
       <div
         style={{
@@ -137,7 +119,7 @@ export function HomePlaceholder() {
                   >
                     <td
                       style={{
-                        padding: 'var(--space-3) var(--space-5)',
+                        padding: 'var(--space-3) var(--space-4)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',

@@ -2,8 +2,9 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins/organization';
 import { emailOTP } from 'better-auth/plugins/email-otp';
-import { schema, type Database } from '@attest/db';
+import { schema, type Database, type DataAccess } from '@attest/db';
 import type { Mailer } from './mailer';
+import { loadDefaultActiveOrg, persistLastActiveOrg } from './active-org';
 
 // Dashboard auth: session login (email/password + Google) over orgs/members [arch §6.1].
 // - email/password is the credential; email is verified at signup via an OTP code (emailOTP),
@@ -15,6 +16,7 @@ import type { Mailer } from './mailer';
 
 export interface AuthDeps {
   db: Database;
+  dal: DataAccess;
   mailer: Mailer;
   secret: string;
   baseURL: string;
@@ -39,6 +41,28 @@ export function buildAuth(deps: AuthDeps) {
     ...(deps.cookieDomain
       ? { advanced: { crossSubDomainCookies: { enabled: true, domain: deps.cookieDomain } } }
       : {}),
+    // Land smart: resolve a default active org at session creation so a returning (or single-org) user
+    // never hits the org picker, and persist the choice per-user on every switch so it survives session
+    // expiry [arch §6.1]. Resolution is membership-validated server-side, so a session can never carry
+    // an org the user does not belong to [invariant 3].
+    databaseHooks: {
+      session: {
+        create: {
+          before: async (session) => {
+            const activeOrganizationId = await loadDefaultActiveOrg(deps.dal, session.userId);
+            if (!activeOrganizationId) return;
+            return { data: { ...session, activeOrganizationId } };
+          },
+        },
+        update: {
+          after: async (session) => {
+            const orgId = (session as { activeOrganizationId?: string | null }).activeOrganizationId;
+            const userId = (session as { userId?: string }).userId;
+            if (orgId && userId) await persistLastActiveOrg(deps.dal, userId, orgId);
+          },
+        },
+      },
+    },
     emailAndPassword: { enabled: true, requireEmailVerification: true },
     // OTP verification is how a new email/password account proves its address, and signUp returns no
     // session while unverified. The verify-email step must therefore ESTABLISH the session, or the

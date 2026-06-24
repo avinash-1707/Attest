@@ -1,6 +1,6 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import type { Db } from './types';
-import { appKey, appKeyApp, orgBilling, webhookEvent } from '../schema';
+import { appKey, appKeyApp, member, orgBilling, user, webhookEvent } from '../schema';
 import { appRepo } from './app.repo';
 import { appKeyRepo, type AppKey } from './app-key.repo';
 import { runRepo } from './run.repo';
@@ -67,6 +67,51 @@ export async function resolveOrgByDodoCustomer(
     .from(orgBilling)
     .where(eq(orgBilling.dodoCustomerId, dodoCustomerId));
   return row?.orgId;
+}
+
+// A user's org memberships, oldest-joined first. Drives default-workspace resolution at login: a
+// non-org-scoped lookup whose RESULT is the set of orgs the user may act in [arch §6.1]. Membership
+// is the source of truth, so a stale last/desired org can never select an org the user has left.
+export async function getUserOrgMemberships(
+  db: Db,
+  userId: string,
+): Promise<{ organizationId: string; createdAt: Date }[]> {
+  return db
+    .select({ organizationId: member.organizationId, createdAt: member.createdAt })
+    .from(member)
+    .where(eq(member.userId, userId))
+    .orderBy(asc(member.createdAt));
+}
+
+// The user's persisted last-active org (user.lastActiveOrganizationId), validated against membership
+// by the caller before use. Survives session expiry so a returning user reopens their last workspace.
+export async function getUserLastActiveOrg(db: Db, userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ lastActiveOrganizationId: user.lastActiveOrganizationId })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return row?.lastActiveOrganizationId ?? null;
+}
+
+// Persist the user's last-active org after a successful switch. Only called with a real org id, so
+// the durable pointer is never nulled by a sign-out or active-org clear. The IS DISTINCT FROM guard
+// makes the no-change case a no-op (no row update, no updatedAt bump): the session-update hook fires
+// on every rolling refresh, not just on switch, so the common case is rewriting the same value.
+export async function setUserLastActiveOrg(
+  db: Db,
+  userId: string,
+  organizationId: string,
+): Promise<void> {
+  await db
+    .update(user)
+    .set({ lastActiveOrganizationId: organizationId })
+    .where(
+      and(
+        eq(user.id, userId),
+        sql`${user.lastActiveOrganizationId} is distinct from ${organizationId}`,
+      ),
+    );
 }
 
 // Record a verified webhook delivery for dedupe + audit [tech-arch §13.5]. Returns { fresh: false }

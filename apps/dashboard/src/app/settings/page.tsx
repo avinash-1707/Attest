@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function SettingsPage() {
   return (
     <AppShell>
-      <div style={{ padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <div style={{ padding: 'var(--space-8)', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
         <PageHeader
           title="Settings"
           description="Organization and workspace configuration."

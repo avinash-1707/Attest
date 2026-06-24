@@ -5,13 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUp, signIn } from '@/lib/auth-client';
 import { DASHBOARD_URL } from '@/lib/env';
+import { useRedirectIfAuthed } from '@/lib/use-redirect-if-authed';
 import { Button } from '@/components/ui/Button';
 import { Input, Field } from '@/components/ui/Input';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function SignUpForm() {
+  const { isPending: sessionPending } = useRedirectIfAuthed();
+
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -19,6 +23,21 @@ export function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  if (sessionPending) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 'var(--space-12)',
+        }}
+      >
+        <Spinner style={{ color: 'var(--text-muted)' }} />
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

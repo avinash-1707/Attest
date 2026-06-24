@@ -3,7 +3,7 @@ import { OrgSelectForm } from '@/components/auth/OrgSelectForm';
 import { AttestMark } from '@/components/shell/AttestMark';
 
 export const metadata: Metadata = {
-  title: 'Select organization - Attest',
+  title: 'Create workspace - Attest',
 };
 
 export default function OrgPage() {
@@ -43,6 +43,7 @@ export default function OrgPage() {
         </div>
 
         <div
+          className="attest-enter"
           style={{
             backgroundColor: 'var(--surface-raised)',
             borderRadius: 'var(--radius-clay-md)',
@@ -61,7 +62,7 @@ export default function OrgPage() {
                 marginBottom: 'var(--space-2)',
               }}
             >
-              Select organization
+              Create your workspace
             </h1>
             <p
               style={{
@@ -70,7 +71,7 @@ export default function OrgPage() {
                 color: 'var(--text-muted)',
               }}
             >
-              Choose an existing organization or create a new one to continue.
+              Name your workspace to get started.
             </p>
           </div>
           <OrgSelectForm />

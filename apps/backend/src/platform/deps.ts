@@ -85,6 +85,7 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
 
   const auth = buildAuth({
     db,
+    dal,
     mailer: createConsoleMailer(),
     secret: config.betterAuthSecret,
     baseURL: config.betterAuthUrl,

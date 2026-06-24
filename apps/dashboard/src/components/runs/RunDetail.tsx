@@ -42,7 +42,7 @@ export function RunDetail({ id }: RunDetailProps) {
   const evidenceErrorMsg = evidenceError ? (evidenceError as Error).message : null;
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
         <Link
           href="/runs"

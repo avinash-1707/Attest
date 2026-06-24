@@ -47,7 +47,7 @@ export function RunsView() {
   }
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}> {/* wide table width; standard content pages use 800 */}
       <PageHeader
         title="Runs"
         description="Attestation runs submitted via the MCP server or dashboard. Click any row to see the full report."
@@ -145,7 +145,7 @@ function FilterTabs({
     <div
       style={{
         display: 'flex',
-        gap: 'var(--space-1)',
+        gap: 'var(--space-2)',
         borderBottom: '1px solid var(--surface-border)',
         paddingBottom: 0,
       }}
