@@ -1,7 +1,8 @@
 // The run queue contract shared by the enqueuing backend and the consuming worker [tech-arch §4, §7.5].
 // Both sides must agree on the queue/job name and the retry budget, so they live here, not in either app.
 
-export const RUN_QUEUE = 'attest:runs';
+// No ":" - BullMQ reserves it as the Redis key-namespace separator and rejects it in a queue name.
+export const RUN_QUEUE = 'attest-runs';
 export const RUN_JOB = 'run';
 
 // Total attempts per run = initial + up to 2 environment-failure retries [tech-arch §7.5]. The producer
