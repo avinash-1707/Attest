@@ -649,6 +649,20 @@
   );
 }
 
+/* ---- FAQ accordion (native details, zero-JS) ---- */
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary::marker {
+  content: '';
+}
+.faq-item[open] .faq-chevron {
+  transform: rotate(180deg);
+}
+.faq-item[open] .faq-body {
+  animation: attest-fade-up var(--dur-3) var(--ease-out) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .seal-rotate,
   .seal-rotate-rev,

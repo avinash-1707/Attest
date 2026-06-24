@@ -7,7 +7,8 @@ const cols: Array<{ title: string; links: Array<{ label: string; href: string }>
     links: [
       { label: 'How it works', href: '#how' },
       { label: 'Surfaces', href: '#surfaces' },
-      { label: 'Open core', href: '#open' },
+      { label: 'Pricing', href: '#pricing' },
+      { label: 'FAQ', href: '#faq' },
     ],
   },
   {

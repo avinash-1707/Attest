@@ -7,6 +7,8 @@ import { Metrics } from '@/components/marketing/Metrics';
 import { Surfaces } from '@/components/marketing/Surfaces';
 import { Guarantees } from '@/components/marketing/Guarantees';
 import { OpenCore } from '@/components/marketing/OpenCore';
+import { Pricing } from '@/components/marketing/Pricing';
+import { Faq } from '@/components/marketing/Faq';
 import { FinalCTA } from '@/components/marketing/FinalCTA';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 
@@ -25,6 +27,8 @@ export default function HomePage() {
       <Surfaces />
       <Guarantees />
       <OpenCore />
+      <Pricing />
+      <Faq />
       <FinalCTA />
       <SiteFooter />
     </main>

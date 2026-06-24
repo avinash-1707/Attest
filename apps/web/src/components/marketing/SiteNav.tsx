@@ -7,7 +7,8 @@ import { Wordmark } from './Wordmark';
 const links = [
   { href: '#how', id: 'how', label: 'How it works' },
   { href: '#surfaces', id: 'surfaces', label: 'Surfaces' },
-  { href: '#open', id: 'open', label: 'Open core' },
+  { href: '#pricing', id: 'pricing', label: 'Pricing' },
+  { href: '#faq', id: 'faq', label: 'FAQ' },
 ];
 
 export function SiteNav() {
