@@ -74,53 +74,60 @@ const s3Config = base.extend({
 export type BackendConfig = z.infer<typeof diskConfig> | z.infer<typeof s3Config>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
+  // An env var set to "" (common in a copied .env / .env.example) means unset, not present-empty:
+  // collapse it to undefined so optional fields stay optional and defaulted fields take their default.
+  const v = (key: string): string | undefined => {
+    const raw = env[key];
+    return raw && raw.length > 0 ? raw : undefined;
+  };
+
   const common = {
-    port: env.PORT ? Number(env.PORT) : undefined,
-    databaseUrl: env.DATABASE_URL,
-    redisUrl: env.REDIS_URL,
-    kek: env.ATTEST_KEK,
-    kekId: env.ATTEST_KEK_ID,
-    betterAuthSecret: env.BETTER_AUTH_SECRET,
-    betterAuthUrl: env.BETTER_AUTH_URL,
-    cookieDomain: env.COOKIE_DOMAIN,
-    trustedOrigins: env.TRUSTED_ORIGINS
-      ? env.TRUSTED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+    port: v('PORT') ? Number(v('PORT')) : undefined,
+    databaseUrl: v('DATABASE_URL'),
+    redisUrl: v('REDIS_URL'),
+    kek: v('ATTEST_KEK'),
+    kekId: v('ATTEST_KEK_ID'),
+    betterAuthSecret: v('BETTER_AUTH_SECRET'),
+    betterAuthUrl: v('BETTER_AUTH_URL'),
+    cookieDomain: v('COOKIE_DOMAIN'),
+    trustedOrigins: v('TRUSTED_ORIGINS')
+      ? v('TRUSTED_ORIGINS')!.split(',').map((o) => o.trim()).filter(Boolean)
       : undefined,
     google:
-      env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-        ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
+      v('GOOGLE_CLIENT_ID') && v('GOOGLE_CLIENT_SECRET')
+        ? { clientId: v('GOOGLE_CLIENT_ID')!, clientSecret: v('GOOGLE_CLIENT_SECRET')! }
         : undefined,
-    openrouterApiKey: env.OPENROUTER_API_KEY,
-    modelBaseUrl: env.MODEL_BASE_URL,
+    openrouterApiKey: v('OPENROUTER_API_KEY'),
+    modelBaseUrl: v('MODEL_BASE_URL'),
     modelDefaults: {
-      planner: env.MODEL_DEFAULT_PLANNER,
-      judge: env.MODEL_DEFAULT_JUDGE,
-      resolution: env.MODEL_DEFAULT_RESOLUTION,
+      planner: v('MODEL_DEFAULT_PLANNER'),
+      judge: v('MODEL_DEFAULT_JUDGE'),
+      resolution: v('MODEL_DEFAULT_RESOLUTION'),
     },
     billingEnabled: env.BILLING_ENABLED === 'true',
     requireBilling: env.REQUIRE_BILLING === 'true',
-    dodoWebhookKey: env.DODO_WEBHOOK_KEY,
-    dodoApiKey: env.DODO_PAYMENTS_API_KEY,
-    dodoEnvironment: env.DODO_ENVIRONMENT,
-    dashboardUrl: env.DASHBOARD_URL,
+    dodoWebhookKey: v('DODO_WEBHOOK_KEY'),
+    dodoApiKey: v('DODO_PAYMENTS_API_KEY'),
+    dodoEnvironment: v('DODO_ENVIRONMENT'),
+    dashboardUrl: v('DASHBOARD_URL'),
   };
 
-  if ((env.EVIDENCE_BACKEND ?? 'disk') === 's3') {
+  if ((v('EVIDENCE_BACKEND') ?? 'disk') === 's3') {
     return s3Config.parse({
       ...common,
       evidence: {
         backend: 's3',
-        bucket: env.EVIDENCE_BUCKET,
-        endpoint: env.EVIDENCE_ENDPOINT,
-        region: env.EVIDENCE_REGION,
-        accessKeyId: env.EVIDENCE_ACCESS_KEY_ID,
-        secretAccessKey: env.EVIDENCE_SECRET_ACCESS_KEY,
+        bucket: v('EVIDENCE_BUCKET'),
+        endpoint: v('EVIDENCE_ENDPOINT'),
+        region: v('EVIDENCE_REGION'),
+        accessKeyId: v('EVIDENCE_ACCESS_KEY_ID'),
+        secretAccessKey: v('EVIDENCE_SECRET_ACCESS_KEY'),
       },
     });
   }
 
   return diskConfig.parse({
     ...common,
-    evidence: { backend: 'disk', root: env.EVIDENCE_ROOT },
+    evidence: { backend: 'disk', root: v('EVIDENCE_ROOT') },
   });
 }

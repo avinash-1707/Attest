@@ -34,12 +34,19 @@ const s3Config = base.extend({
 export type WorkerConfig = z.infer<typeof diskConfig> | z.infer<typeof s3Config>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
-  const backend = env.EVIDENCE_BACKEND ?? 'disk';
+  // An env var set to "" (common in a copied .env / .env.example) means unset, not present-empty:
+  // collapse it to undefined so optional fields stay optional and defaulted fields take their default.
+  const v = (key: string): string | undefined => {
+    const raw = env[key];
+    return raw && raw.length > 0 ? raw : undefined;
+  };
+
+  const backend = v('EVIDENCE_BACKEND') ?? 'disk';
   const common = {
-    databaseUrl: env.DATABASE_URL,
-    redisUrl: env.REDIS_URL,
-    modelBaseUrl: env.MODEL_BASE_URL,
-    concurrency: env.WORKER_CONCURRENCY ? Number(env.WORKER_CONCURRENCY) : undefined,
+    databaseUrl: v('DATABASE_URL'),
+    redisUrl: v('REDIS_URL'),
+    modelBaseUrl: v('MODEL_BASE_URL'),
+    concurrency: v('WORKER_CONCURRENCY') ? Number(v('WORKER_CONCURRENCY')) : undefined,
     billingEnabled: env.BILLING_ENABLED === 'true',
     requireBilling: env.REQUIRE_BILLING === 'true',
   };
@@ -49,17 +56,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WorkerConfig {
       ...common,
       evidence: {
         backend: 's3',
-        bucket: env.EVIDENCE_BUCKET,
-        endpoint: env.EVIDENCE_ENDPOINT,
-        region: env.EVIDENCE_REGION,
-        accessKeyId: env.EVIDENCE_ACCESS_KEY_ID,
-        secretAccessKey: env.EVIDENCE_SECRET_ACCESS_KEY,
+        bucket: v('EVIDENCE_BUCKET'),
+        endpoint: v('EVIDENCE_ENDPOINT'),
+        region: v('EVIDENCE_REGION'),
+        accessKeyId: v('EVIDENCE_ACCESS_KEY_ID'),
+        secretAccessKey: v('EVIDENCE_SECRET_ACCESS_KEY'),
       },
     });
   }
 
   return diskConfig.parse({
     ...common,
-    evidence: { backend: 'disk', root: env.EVIDENCE_ROOT },
+    evidence: { backend: 'disk', root: v('EVIDENCE_ROOT') },
   });
 }
