@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { Providers } from './providers';
+import { SmoothScroll } from '@/components/SmoothScroll';
+import 'lenis/dist/lenis.css';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -32,7 +34,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       suppressHydrationWarning
     >
       <body>
-        <Providers>{children}</Providers>
+        <SmoothScroll>
+          <Providers>{children}</Providers>
+        </SmoothScroll>
       </body>
     </html>
   );
