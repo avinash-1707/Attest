@@ -1,21 +1,33 @@
+import type { ComponentType } from 'react';
 import { Section, Eyebrow } from './Section';
 import { Reveal } from './Reveal';
+import { TargetIcon, BrowserIcon, SealIcon } from './art/StepIcons';
 
-const steps = [
+interface Step {
+  n: string;
+  title: string;
+  body: string;
+  Icon: ComponentType<{ className?: string }>;
+}
+
+const steps: Step[] = [
   {
     n: '01',
     title: 'State the outcome',
-    body: 'An agent calls attest(goal) over MCP, or a human clicks Run in the dashboard. Both hit one backend, one queue, one worker.',
+    body: 'Describe what a user should be able to do, in plain language. Your agent calls it over MCP, or you click Run in the dashboard.',
+    Icon: TargetIcon,
   },
   {
     n: '02',
     title: 'Drive a real browser',
-    body: 'The worker plans the journey from the goal, executes it server-side in isolated Chromium, and captures evidence at every step.',
+    body: 'Attest plans the journey, runs it in isolated Chromium exactly as a person would, and captures evidence at every step.',
+    Icon: BrowserIcon,
   },
   {
     n: '03',
     title: 'Judge and attest',
-    body: 'Five deterministic guards plus outcome-level judgment return passed, failed, or inconclusive — with root cause, evidence refs, and a next action.',
+    body: 'It weighs the outcome and returns a signed verdict: passed, failed, or inconclusive — with the root cause and what to do next.',
+    Icon: SealIcon,
   },
 ];
 
@@ -28,8 +40,8 @@ export function HowItWorks() {
           style={{
             fontFamily: 'var(--font-sans)',
             fontWeight: 700,
-            fontSize: 'clamp(1.7rem, 3.6vw, 2.4rem)',
-            lineHeight: 1.1,
+            fontSize: 'clamp(1.8rem, 3.8vw, 2.6rem)',
+            lineHeight: 1.08,
             letterSpacing: 'var(--tracking-tight)',
             color: 'var(--text-primary)',
             marginTop: 'var(--space-4)',
@@ -45,8 +57,8 @@ export function HowItWorks() {
             marginTop: 'var(--space-4)',
           }}
         >
-          No flaky selector scripts to maintain. No transcript to parse. Describe what a
-          user should be able to do; get back whether they can.
+          No selector scripts to babysit. No transcript to parse. Just describe the outcome
+          and get back whether it holds.
         </p>
       </Reveal>
 
@@ -55,7 +67,7 @@ export function HowItWorks() {
           <Reveal
             key={s.n}
             index={i}
-            className="attest-lift"
+            className="attest-lift relative overflow-hidden"
             style={{
               backgroundColor: 'var(--surface-raised)',
               borderRadius: 'var(--radius-clay-md)',
@@ -63,23 +75,39 @@ export function HowItWorks() {
               padding: 'var(--space-6)',
             }}
           >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-sm)',
-                letterSpacing: 'var(--tracking-wide)',
-                color: 'var(--accent-primary)',
-              }}
-            >
-              {s.n}
-            </span>
+            <div className="flex items-center justify-between">
+              <span
+                className="inline-flex items-center justify-center"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 'var(--radius-clay-sm)',
+                  backgroundColor: 'var(--surface-elevated)',
+                  boxShadow: 'var(--clay-shadow)',
+                }}
+              >
+                <s.Icon />
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'var(--text-2xl)',
+                  fontWeight: 500,
+                  letterSpacing: 'var(--tracking-tight)',
+                  color: 'var(--surface-border)',
+                }}
+              >
+                {s.n}
+              </span>
+            </div>
+
             <h3
               style={{
                 fontFamily: 'var(--font-sans)',
                 fontSize: 'var(--text-xl)',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
-                marginTop: 'var(--space-3)',
+                marginTop: 'var(--space-5)',
               }}
             >
               {s.title}

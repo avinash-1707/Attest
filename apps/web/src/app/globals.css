@@ -525,3 +525,138 @@
   scrollbar-color: var(--surface-border) var(--surface-base);
   scrollbar-width: thin;
 }
+
+/* ============================================================
+   PREMIUM ATMOSPHERE (landing revamp)
+   Pattern-based depth only: film grain, engraved guilloche
+   hairlines, warm vignette. No colored glow, glass, or gradient
+   fills on elements [ui-context §2] — atmosphere lives behind
+   content, brand signal stays on the seal + accents.
+   ============================================================ */
+
+/* ---- Film grain: fixed fractal-noise tooth over the whole canvas ---- */
+.attest-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+[data-theme='light'] .attest-grain::after {
+  opacity: 0.025;
+}
+
+/* ---- Warm vignette: edge darkening for depth (neutral, not a glow) ---- */
+.attest-vignette::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(135% 100% at 50% -10%, transparent 52%, rgba(17, 13, 11, 0.55) 100%);
+}
+
+[data-theme='light'] .attest-vignette::before {
+  background:
+    radial-gradient(135% 100% at 50% -10%, transparent 60%, rgba(60, 40, 30, 0.06) 100%);
+}
+
+/* ---- Seal dial rotation (CSS-only, paused under reduced motion) ---- */
+@keyframes attest-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes attest-rotate-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+.seal-rotate {
+  transform-origin: center;
+  animation: attest-rotate 70s linear infinite;
+}
+.seal-rotate-rev {
+  transform-origin: center;
+  animation: attest-rotate-rev 96s linear infinite;
+}
+
+/* ---- Seal verdict draw-on: checkmark + ring stroke ---- */
+@keyframes attest-draw {
+  from {
+    stroke-dashoffset: var(--draw-len, 200);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.seal-draw {
+  stroke-dasharray: var(--draw-len, 200);
+  stroke-dashoffset: var(--draw-len, 200);
+  animation: attest-draw 1.1s var(--ease-out-expo) 0.25s forwards;
+}
+
+/* ---- Logo marquee (integrations) — seamless, hover to pause ---- */
+@keyframes attest-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.attest-marquee {
+  animation: attest-marquee 34s linear infinite;
+  will-change: transform;
+}
+.attest-marquee-track:hover .attest-marquee {
+  animation-play-state: paused;
+}
+
+/* ---- Edge fade mask for marquee rails ---- */
+.attest-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+}
+
+/* ---- Engraved hairline divider (certificate rule) ---- */
+.attest-rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--surface-border) 18%,
+    var(--surface-border) 82%,
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seal-rotate,
+  .seal-rotate-rev,
+  .attest-marquee {
+    animation: none !important;
+  }
+  .seal-draw {
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+}

@@ -1,24 +1,28 @@
+import type { ComponentType } from 'react';
 import { Section, Eyebrow } from './Section';
 import { Reveal } from './Reveal';
+import { McpArt, DashboardArt } from './art/SurfaceArt';
 
-const surfaces = [
+interface Surface {
+  tag: string;
+  title: string;
+  body: string;
+  Art: ComponentType<{ className?: string }>;
+}
+
+const surfaces: Surface[] = [
   {
-    tag: 'apps/mcp',
+    tag: 'For your agent',
     title: 'MCP server',
-    body: 'A thin client your coding agent runs locally. Claude Code, Codex, Gemini CLI, Cline, Cursor, Windsurf — any MCP host calls attest and loops on the verdict.',
+    body: 'A thin client your coding agent runs locally. Any MCP host — Claude Code, Cursor, Codex, Cline — calls attest and loops on the verdict until the work is real.',
+    Art: McpArt,
   },
   {
-    tag: 'apps/dashboard',
+    tag: 'For your team',
     title: 'Dashboard',
-    body: 'A human surface to trigger the same runs, watch them live, and review attestations with full evidence — screenshots, DOM, console, and network.',
+    body: 'Trigger the same runs by hand, watch them execute live, and review every attestation with full evidence: screenshots, DOM, console, and network.',
+    Art: DashboardArt,
   },
-];
-
-const trust = [
-  { k: 'No source ingestion', v: 'Attest never reads your codebase. It verifies the running product, from the outside.' },
-  { k: 'Tenant isolation', v: 'Every row is org-scoped. There is no cross-tenant query path, by construction.' },
-  { k: 'Secrets stay secret', v: 'Credentials are encrypted, never logged, never returned to a client, never in evidence.' },
-  { k: 'Self-hostable', v: 'Apache-2.0 core. Run it in our cloud or your own — no functional gap in the verdict loop.' },
 ];
 
 export function Surfaces() {
@@ -30,8 +34,8 @@ export function Surfaces() {
           style={{
             fontFamily: 'var(--font-sans)',
             fontWeight: 700,
-            fontSize: 'clamp(1.7rem, 3.6vw, 2.4rem)',
-            lineHeight: 1.1,
+            fontSize: 'clamp(1.8rem, 3.8vw, 2.6rem)',
+            lineHeight: 1.08,
             letterSpacing: 'var(--tracking-tight)',
             color: 'var(--text-primary)',
             marginTop: 'var(--space-4)',
@@ -39,14 +43,25 @@ export function Surfaces() {
         >
           Two ways in. One source of truth.
         </h2>
+        <p
+          style={{
+            fontSize: 'var(--text-lg)',
+            lineHeight: 1.5,
+            color: 'var(--text-secondary)',
+            marginTop: 'var(--space-4)',
+          }}
+        >
+          Whether a verdict is requested by an agent or a human, it runs the same engine and
+          returns the same attestation.
+        </p>
       </Reveal>
 
       <div className="mt-12 grid gap-5 md:grid-cols-2">
         {surfaces.map((s, i) => (
           <Reveal
-            key={s.tag}
+            key={s.title}
             index={i}
-            className="attest-lift"
+            className="attest-lift flex flex-col"
             style={{
               backgroundColor: 'var(--surface-raised)',
               borderRadius: 'var(--radius-clay-md)',
@@ -54,16 +69,25 @@ export function Surfaces() {
               padding: 'var(--space-8)',
             }}
           >
-            <span
+            <div
+              className="overflow-hidden"
               style={{
-                display: 'inline-block',
+                backgroundColor: 'var(--surface-base)',
+                border: '1px solid var(--surface-border)',
+                borderRadius: 'var(--radius-clay-sm)',
+                padding: 'var(--space-5)',
+              }}
+            >
+              <s.Art />
+            </div>
+
+            <span
+              className="mt-6 uppercase"
+              style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 'var(--text-xs)',
-                color: 'var(--data-text-muted)',
-                backgroundColor: 'var(--data-surface)',
-                border: '1px solid var(--data-border)',
-                borderRadius: 'var(--radius-xs)',
-                padding: '2px 6px',
+                letterSpacing: 'var(--tracking-wider)',
+                color: 'var(--accent-primary)',
               }}
             >
               {s.tag}
@@ -74,7 +98,7 @@ export function Surfaces() {
                 fontSize: 'var(--text-2xl)',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
-                marginTop: 'var(--space-4)',
+                marginTop: 'var(--space-2)',
               }}
             >
               {s.title}
@@ -92,45 +116,6 @@ export function Surfaces() {
           </Reveal>
         ))}
       </div>
-
-      {/* Trust strip */}
-      <Reveal
-        className="mt-5 grid gap-px md:grid-cols-2 lg:grid-cols-4"
-        style={{
-          backgroundColor: 'var(--surface-border)',
-          borderRadius: 'var(--radius-clay-md)',
-          boxShadow: 'var(--clay-shadow)',
-          overflow: 'hidden',
-        }}
-      >
-        {trust.map((t) => (
-          <div
-            key={t.k}
-            style={{ backgroundColor: 'var(--surface-raised)', padding: 'var(--space-5)' }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'var(--text-md)',
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-              }}
-            >
-              {t.k}
-            </div>
-            <p
-              style={{
-                fontSize: 'var(--text-sm)',
-                lineHeight: 1.55,
-                color: 'var(--text-muted)',
-                marginTop: 'var(--space-2)',
-              }}
-            >
-              {t.v}
-            </p>
-          </div>
-        ))}
-      </Reveal>
     </Section>
   );
 }

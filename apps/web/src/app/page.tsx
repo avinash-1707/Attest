@@ -1,22 +1,29 @@
 import { SiteNav } from '@/components/marketing/SiteNav';
 import { Hero } from '@/components/marketing/Hero';
-import { Metrics } from '@/components/marketing/Metrics';
+import { Integrations } from '@/components/marketing/Integrations';
+import { ProofCompare } from '@/components/marketing/ProofCompare';
 import { HowItWorks } from '@/components/marketing/HowItWorks';
-import { Terminal } from '@/components/marketing/Terminal';
+import { Metrics } from '@/components/marketing/Metrics';
 import { Surfaces } from '@/components/marketing/Surfaces';
+import { Guarantees } from '@/components/marketing/Guarantees';
 import { OpenCore } from '@/components/marketing/OpenCore';
 import { FinalCTA } from '@/components/marketing/FinalCTA';
 import { SiteFooter } from '@/components/marketing/SiteFooter';
 
 export default function HomePage() {
   return (
-    <main style={{ backgroundColor: 'var(--surface-base)', overflowX: 'hidden' }}>
+    <main
+      className="attest-vignette attest-grain relative"
+      style={{ overflowX: 'hidden' }}
+    >
       <SiteNav />
       <Hero />
-      <Metrics />
+      <Integrations />
+      <ProofCompare />
       <HowItWorks />
-      <Terminal />
+      <Metrics />
       <Surfaces />
+      <Guarantees />
       <OpenCore />
       <FinalCTA />
       <SiteFooter />
