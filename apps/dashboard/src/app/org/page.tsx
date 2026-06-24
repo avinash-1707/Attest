@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { OrgSelectForm } from '@/components/auth/OrgSelectForm';
+import { AttestMark } from '@/components/shell/AttestMark';
 
 export const metadata: Metadata = {
   title: 'Select organization - Attest',
@@ -27,25 +28,7 @@ export default function OrgPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 'var(--radius-clay-sm)',
-              backgroundColor: 'var(--accent-primary)',
-              boxShadow: 'var(--clay-shadow-accent)',
-              color: 'var(--text-on-accent)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-md)',
-              fontWeight: 500,
-            }}
-          >
-            @
-          </span>
+          <AttestMark size={32} />
           <span
             style={{
               fontFamily: 'var(--font-sans)',
