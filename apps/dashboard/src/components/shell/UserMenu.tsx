@@ -1,16 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/lib/auth-client';
 import { WEB_URL } from '@/lib/env';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+
+interface MenuItem {
+  label: string;
+  icon: string;
+  href: string;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { label: 'Profile', icon: '◍', href: '/profile' },
+  { label: 'Settings', icon: '⊙', href: '/settings' },
+];
 
 export function UserMenu() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const email = session?.user?.email ?? '';
-  const name = session?.user?.name ?? email;
-  const initial = name.charAt(0).toUpperCase();
+  const name = session?.user?.name || email;
+  const initial = (name || '?').charAt(0).toUpperCase();
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  function navigate(href: string) {
+    setOpen(false);
+    router.push(href);
+  }
 
   async function handleSignOut() {
     setLoading(true);
@@ -26,14 +66,32 @@ export function UserMenu() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-      <div
+    <div ref={rootRef} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label="Account menu"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 'var(--space-2)',
-          flex: 1,
-          overflow: 'hidden',
+          width: '100%',
+          padding: `var(--space-2) var(--space-3)`,
+          borderRadius: 'var(--radius-clay-sm)',
+          backgroundColor: open ? 'var(--surface-elevated)' : 'transparent',
+          boxShadow: open ? 'var(--clay-shadow)' : 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--text-primary)',
+          textAlign: 'left',
+          transition: 'background-color 80ms ease-out, box-shadow 80ms ease-out',
+        }}
+        onMouseEnter={(e) => {
+          if (!open) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+        }}
+        onMouseLeave={(e) => {
+          if (!open) e.currentTarget.style.backgroundColor = 'transparent';
         }}
       >
         <span
@@ -42,15 +100,15 @@ export function UserMenu() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 28,
-            height: 28,
+            width: 22,
+            height: 22,
             borderRadius: 'var(--radius-full)',
             backgroundColor: 'var(--surface-elevated)',
             boxShadow: 'var(--clay-shadow)',
             color: 'var(--text-secondary)',
             fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-xs)',
-            fontWeight: 600,
+            fontSize: 'var(--text-2xs)',
+            fontWeight: 700,
             flexShrink: 0,
           }}
         >
@@ -59,43 +117,105 @@ export function UserMenu() {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-xs)',
-            color: 'var(--text-muted)',
+            fontSize: 'var(--text-sm)',
+            fontWeight: 500,
+            color: 'var(--text-primary)',
+            flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
           title={email}
         >
-          {email}
+          {name}
         </span>
-      </div>
-      <button
-        onClick={handleSignOut}
-        disabled={loading}
-        aria-label="Sign out"
-        title="Sign out"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 28,
-          height: 28,
-          borderRadius: 'var(--radius-clay-sm)',
-          backgroundColor: 'transparent',
-          border: 'none',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          color: 'var(--text-muted)',
-          fontSize: 13,
-          flexShrink: 0,
-          opacity: loading ? 0.5 : 1,
-          transition: 'color 80ms ease-out',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
-      >
-        {loading ? '…' : '→'}
+        <span aria-hidden="true" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+          {open ? '▼' : '▲'}
+        </span>
       </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label="Account"
+          className="attest-dialog-in"
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + var(--space-2))',
+            left: 0,
+            right: 0,
+            backgroundColor: 'var(--surface-raised)',
+            borderRadius: 'var(--radius-clay-md)',
+            boxShadow: 'var(--clay-shadow-hover)',
+            border: '1px solid var(--surface-border)',
+            overflow: 'hidden',
+            zIndex: 50,
+          }}
+        >
+          {MENU_ITEMS.map((item) => (
+            <button
+              key={item.href}
+              role="menuitem"
+              onClick={() => navigate(item.href)}
+              style={menuItemStyle('var(--text-primary)')}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <span aria-hidden="true" style={menuIconStyle}>{item.icon}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+            </button>
+          ))}
+          <div style={{ height: 1, backgroundColor: 'var(--surface-border)' }} />
+          <button
+            role="menuitem"
+            onClick={() => { setOpen(false); setConfirmOpen(true); }}
+            style={menuItemStyle('var(--color-fail-text)')}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <span aria-hidden="true" style={menuIconStyle}>→</span>
+            <span style={{ flex: 1 }}>Sign out</span>
+          </button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleSignOut}
+        title="Sign out"
+        description="You will be returned to the sign-in page. Continue?"
+        confirmLabel="Sign out"
+        loading={loading}
+      />
     </div>
   );
 }
+
+function menuItemStyle(color: string): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 'var(--space-2)',
+    width: '100%',
+    padding: `var(--space-2) var(--space-3)`,
+    border: 'none',
+    backgroundColor: 'transparent',
+    cursor: 'pointer',
+    color,
+    fontFamily: 'var(--font-sans)',
+    fontSize: 'var(--text-sm)',
+    textAlign: 'left',
+    transition: 'background-color 80ms ease-out',
+  };
+}
+
+const menuIconStyle: React.CSSProperties = {
+  width: 16,
+  fontSize: 13,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  lineHeight: 1,
+};

@@ -18,10 +18,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/billing', label: 'Billing', icon: '◈' },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [
-  { href: '/settings', label: 'Settings', icon: '⊙' },
-];
-
 export function SidebarNav() {
   const pathname = usePathname();
 
@@ -43,23 +39,6 @@ export function SidebarNav() {
         }}
       >
         {NAV_ITEMS.map((item) => (
-          <li key={item.href}>
-            <NavLink item={item} active={isActive(item.href)} />
-          </li>
-        ))}
-      </ul>
-      <ul
-        role="list"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-1)',
-          listStyle: 'none',
-          paddingTop: 'var(--space-4)',
-          borderTop: '1px solid var(--surface-border)',
-        }}
-      >
-        {BOTTOM_ITEMS.map((item) => (
           <li key={item.href}>
             <NavLink item={item} active={isActive(item.href)} />
           </li>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 
 interface ModalProps {
@@ -36,9 +37,9 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  if (!rendered) return null;
+  if (!rendered || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div
       role="presentation"
       className={open ? 'attest-overlay-in' : 'attest-overlay-out'}
@@ -122,6 +123,7 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
