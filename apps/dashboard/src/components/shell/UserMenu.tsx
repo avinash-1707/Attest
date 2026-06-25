@@ -5,23 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useSession, signOut } from '@/lib/auth-client';
 import { WEB_URL } from '@/lib/env';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-
-interface MenuItem {
-  label: string;
-  icon: string;
-  href: string;
-}
-
-const MENU_ITEMS: MenuItem[] = [
-  { label: 'Profile', icon: '◍', href: '/profile' },
-  { label: 'Settings', icon: '⊙', href: '/settings' },
-];
+import { SettingsModal } from './SettingsModal';
 
 export function UserMenu() {
   const { data: session } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -152,19 +143,26 @@ export function UserMenu() {
             zIndex: 50,
           }}
         >
-          {MENU_ITEMS.map((item) => (
-            <button
-              key={item.href}
-              role="menuitem"
-              onClick={() => navigate(item.href)}
-              style={menuItemStyle('var(--text-primary)')}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-            >
-              <span aria-hidden="true" style={menuIconStyle}>{item.icon}</span>
-              <span style={{ flex: 1 }}>{item.label}</span>
-            </button>
-          ))}
+          <button
+            role="menuitem"
+            onClick={() => navigate('/profile')}
+            style={menuItemStyle('var(--text-primary)')}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <span aria-hidden="true" style={menuIconStyle}>◍</span>
+            <span style={{ flex: 1 }}>Profile</span>
+          </button>
+          <button
+            role="menuitem"
+            onClick={() => { setOpen(false); setSettingsOpen(true); }}
+            style={menuItemStyle('var(--text-primary)')}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <span aria-hidden="true" style={menuIconStyle}>⊙</span>
+            <span style={{ flex: 1 }}>Settings</span>
+          </button>
           <div style={{ height: 1, backgroundColor: 'var(--surface-border)' }} />
           <button
             role="menuitem"
@@ -178,6 +176,8 @@ export function UserMenu() {
           </button>
         </div>
       )}
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <ConfirmDialog
         open={confirmOpen}

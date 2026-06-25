@@ -9,10 +9,11 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { CreateModelKeyForm } from './CreateModelKeyForm';
 import type { ModelKeyView, ModelKeyCreate } from '@attest/contracts';
 
-export function ModelKeysView() {
+export function ModelKeysView({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: modelKeys, isPending } = useModelKeys();
   const createModelKey = useCreateModelKey();
   const deleteModelKey = useDeleteModelKey();
@@ -35,12 +36,25 @@ export function ModelKeysView() {
   }
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <PageHeader
-        title="Model Keys"
-        description="BYOK model keys let the worker call LLM providers using your own credentials. Keys are sealed server-side and never returned."
-        action={<Button onClick={() => setShowCreate(true)}>Add key</Button>}
-      />
+    <div
+      style={
+        embedded
+          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
+          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
+      }
+    >
+      {embedded ? (
+        <SectionHeader
+          description="BYOK model keys let the worker call LLM providers using your own credentials. Keys are sealed server-side and never returned."
+          action={<Button onClick={() => setShowCreate(true)}>Add key</Button>}
+        />
+      ) : (
+        <PageHeader
+          title="Model Keys"
+          description="BYOK model keys let the worker call LLM providers using your own credentials. Keys are sealed server-side and never returned."
+          action={<Button onClick={() => setShowCreate(true)}>Add key</Button>}
+        />
+      )}
 
       {isPending ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>

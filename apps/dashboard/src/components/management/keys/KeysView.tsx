@@ -9,11 +9,12 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { CreateKeyForm } from './CreateKeyForm';
 import { NewKeyReveal } from './NewKeyReveal';
 import type { AppKeyView, AppKeyCreated, AppKeyCreate } from '@attest/contracts';
 
-export function KeysView() {
+export function KeysView({ embedded = false }: { embedded?: boolean } = {}) {
   const { data: keys, isPending } = useKeys();
   const { data: apps } = useApps();
   const createKey = useCreateKey();
@@ -41,12 +42,25 @@ export function KeysView() {
   const appMap = new Map((apps ?? []).map((a) => [a.id, a.name]));
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <PageHeader
-        title="API Keys"
-        description="Service keys authenticate run submissions from CI and the MCP server. Each key is scoped to one or more apps."
-        action={<Button onClick={() => setShowCreate(true)}>Create key</Button>}
-      />
+    <div
+      style={
+        embedded
+          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
+          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
+      }
+    >
+      {embedded ? (
+        <SectionHeader
+          description="Service keys authenticate run submissions from CI and the MCP server. Each key is scoped to one or more apps."
+          action={<Button onClick={() => setShowCreate(true)}>Create key</Button>}
+        />
+      ) : (
+        <PageHeader
+          title="API Keys"
+          description="Service keys authenticate run submissions from CI and the MCP server. Each key is scoped to one or more apps."
+          action={<Button onClick={() => setShowCreate(true)}>Create key</Button>}
+        />
+      )}
 
       {isPending ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>

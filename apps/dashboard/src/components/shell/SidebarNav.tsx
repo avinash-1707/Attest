@@ -13,8 +13,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Overview', icon: '▦' },
   { href: '/runs', label: 'Runs', icon: '▷' },
   { href: '/apps', label: 'Apps', icon: '⬡' },
-  { href: '/keys', label: 'API Keys', icon: '⌗' },
-  { href: '/model-keys', label: 'Model Keys', icon: '⊞' },
   { href: '/billing', label: 'Billing', icon: '◈' },
 ];
 
