@@ -1,19 +1,22 @@
 'use client';
 
+import type { IconType } from 'react-icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { FiGrid, FiPlay, FiBox, FiCreditCard } from 'react-icons/fi';
+import { useSidebarExpanded } from './SidebarContext';
 
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: IconType;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'Overview', icon: '▦' },
-  { href: '/runs', label: 'Runs', icon: '▷' },
-  { href: '/apps', label: 'Apps', icon: '⬡' },
-  { href: '/billing', label: 'Billing', icon: '◈' },
+  { href: '/', label: 'Overview', icon: FiGrid },
+  { href: '/runs', label: 'Runs', icon: FiPlay },
+  { href: '/apps', label: 'Apps', icon: FiBox },
+  { href: '/billing', label: 'Billing', icon: FiCreditCard },
 ];
 
 export function SidebarNav() {
@@ -47,15 +50,21 @@ export function SidebarNav() {
 }
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const expanded = useSidebarExpanded();
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      title={expanded ? undefined : item.label}
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 'var(--space-3)',
-        padding: `var(--space-2) var(--space-3)`,
+        gap: expanded ? 'var(--space-3)' : 0,
+        padding: expanded ? `var(--space-2) var(--space-3)` : 0,
+        width: expanded ? '100%' : 40,
+        height: 40,
+        margin: expanded ? 0 : '0 auto',
+        justifyContent: expanded ? 'flex-start' : 'center',
         borderRadius: 'var(--radius-clay-sm)',
         fontFamily: 'var(--font-sans)',
         fontSize: 'var(--text-md)',
@@ -64,9 +73,9 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
         textDecoration: 'none',
         backgroundColor: active ? 'var(--surface-elevated)' : 'transparent',
         boxShadow: active ? 'var(--clay-shadow)' : 'none',
-        borderLeft: active ? '2px solid var(--accent-primary)' : '2px solid transparent',
+        overflow: 'hidden',
         transition:
-          'background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), border-left-color var(--dur-2) var(--ease-out)',
+          'background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), gap var(--dur-4) var(--ease-out), padding var(--dur-4) var(--ease-out)',
       }}
       onMouseEnter={(e) => {
         if (!active) {
@@ -84,8 +93,6 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       <span
         aria-hidden="true"
         style={{
-          width: 16,
-          fontSize: 13,
           color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
           flexShrink: 0,
           lineHeight: 1,
@@ -95,9 +102,20 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
           transition: 'color var(--dur-2) var(--ease-out)',
         }}
       >
-        {item.icon}
+        <item.icon size={17} strokeWidth={2} />
       </span>
-      {item.label}
+      <span
+        style={{
+          opacity: expanded ? 1 : 0,
+          maxWidth: expanded ? 180 : 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          transition:
+            'opacity var(--dur-4) var(--ease-out), max-width var(--dur-4) var(--ease-out)',
+        }}
+      >
+        {item.label}
+      </span>
     </Link>
   );
 }

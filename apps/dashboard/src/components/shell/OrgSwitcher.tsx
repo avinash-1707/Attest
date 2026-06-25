@@ -1,16 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, organization, authClient } from '@/lib/auth-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { useSidebarExpanded } from './SidebarContext';
 
 export function OrgSwitcher() {
+  const expanded = useSidebarExpanded();
   const { data: session } = useSession();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!expanded) setOpen(false);
+  }, [expanded]);
 
   const activeOrgId = session?.session.activeOrganizationId;
 
@@ -64,12 +71,17 @@ export function OrgSwitcher() {
         aria-expanded={hasMultiple ? open : undefined}
         aria-haspopup={hasMultiple ? 'listbox' : undefined}
         aria-label="Switch workspace"
+        title={expanded ? undefined : orgName}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 'var(--space-2)',
-          width: '100%',
-          padding: `var(--space-2) var(--space-3)`,
+          gap: expanded ? 'var(--space-2)' : 0,
+          width: expanded ? '100%' : 40,
+          height: 40,
+          margin: expanded ? 0 : '0 auto',
+          padding: expanded ? `var(--space-2) var(--space-3)` : 0,
+          justifyContent: expanded ? 'flex-start' : 'center',
+          overflow: 'hidden',
           borderRadius: 'var(--radius-clay-sm)',
           backgroundColor: 'var(--surface-elevated)',
           boxShadow: 'var(--clay-shadow)',
@@ -77,7 +89,8 @@ export function OrgSwitcher() {
           cursor: hasMultiple ? 'pointer' : 'default',
           color: 'var(--text-primary)',
           textAlign: 'left',
-          transition: 'box-shadow 80ms ease-out',
+          transition:
+            'box-shadow 80ms ease-out, gap var(--dur-4) var(--ease-out), padding var(--dur-4) var(--ease-out)',
         }}
         onMouseEnter={(e) => { if (hasMultiple) e.currentTarget.style.boxShadow = 'var(--clay-shadow-hover)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--clay-shadow)'; }}
@@ -111,13 +124,26 @@ export function OrgSwitcher() {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            opacity: expanded ? 1 : 0,
+            maxWidth: expanded ? 200 : 0,
+            transition:
+              'opacity var(--dur-4) var(--ease-out), max-width var(--dur-4) var(--ease-out)',
           }}
         >
           {orgName}
         </span>
         {hasMultiple && (
-          <span aria-hidden="true" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-            {open ? '▲' : '▼'}
+          <span
+            aria-hidden="true"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--text-muted)',
+              opacity: expanded ? 1 : 0,
+              transition: 'opacity var(--dur-4) var(--ease-out)',
+            }}
+          >
+            {open ? <FiChevronUp size={14} strokeWidth={2} /> : <FiChevronDown size={14} strokeWidth={2} />}
           </span>
         )}
       </button>

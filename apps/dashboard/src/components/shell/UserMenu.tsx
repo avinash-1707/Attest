@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FiChevronUp, FiChevronDown, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
 import { useSession, signOut } from '@/lib/auth-client';
 import { WEB_URL } from '@/lib/env';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SettingsModal } from './SettingsModal';
+import { useSidebarExpanded } from './SidebarContext';
 
 export function UserMenu() {
+  const expanded = useSidebarExpanded();
   const { data: session } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -38,6 +41,10 @@ export function UserMenu() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!expanded) setOpen(false);
+  }, [expanded]);
+
   function navigate(href: string) {
     setOpen(false);
     router.push(href);
@@ -63,12 +70,17 @@ export function UserMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Account menu"
+        title={expanded ? undefined : name}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 'var(--space-2)',
-          width: '100%',
-          padding: `var(--space-2) var(--space-3)`,
+          gap: expanded ? 'var(--space-2)' : 0,
+          width: expanded ? '100%' : 40,
+          height: 40,
+          margin: expanded ? 0 : '0 auto',
+          padding: expanded ? `var(--space-2) var(--space-3)` : 0,
+          justifyContent: expanded ? 'flex-start' : 'center',
+          overflow: 'hidden',
           borderRadius: 'var(--radius-clay-sm)',
           backgroundColor: open ? 'var(--surface-elevated)' : 'transparent',
           boxShadow: open ? 'var(--clay-shadow)' : 'none',
@@ -76,7 +88,8 @@ export function UserMenu() {
           cursor: 'pointer',
           color: 'var(--text-primary)',
           textAlign: 'left',
-          transition: 'background-color 80ms ease-out, box-shadow 80ms ease-out',
+          transition:
+            'background-color 80ms ease-out, box-shadow 80ms ease-out, gap var(--dur-4) var(--ease-out), padding var(--dur-4) var(--ease-out)',
         }}
         onMouseEnter={(e) => {
           if (!open) e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
@@ -115,13 +128,26 @@ export function UserMenu() {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            opacity: expanded ? 1 : 0,
+            maxWidth: expanded ? 200 : 0,
+            transition:
+              'opacity var(--dur-4) var(--ease-out), max-width var(--dur-4) var(--ease-out)',
           }}
           title={email}
         >
           {name}
         </span>
-        <span aria-hidden="true" style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-          {open ? '▼' : '▲'}
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: 'var(--text-muted)',
+            opacity: expanded ? 1 : 0,
+            transition: 'opacity var(--dur-4) var(--ease-out)',
+          }}
+        >
+          {open ? <FiChevronDown size={14} strokeWidth={2} /> : <FiChevronUp size={14} strokeWidth={2} />}
         </span>
       </button>
 
@@ -150,7 +176,7 @@ export function UserMenu() {
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <span aria-hidden="true" style={menuIconStyle}>◍</span>
+            <span aria-hidden="true" style={menuIconStyle}><FiUser size={15} strokeWidth={2} /></span>
             <span style={{ flex: 1 }}>Profile</span>
           </button>
           <button
@@ -160,7 +186,7 @@ export function UserMenu() {
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <span aria-hidden="true" style={menuIconStyle}>⊙</span>
+            <span aria-hidden="true" style={menuIconStyle}><FiSettings size={15} strokeWidth={2} /></span>
             <span style={{ flex: 1 }}>Settings</span>
           </button>
           <div style={{ height: 1, backgroundColor: 'var(--surface-border)' }} />
@@ -171,7 +197,7 @@ export function UserMenu() {
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            <span aria-hidden="true" style={menuIconStyle}>→</span>
+            <span aria-hidden="true" style={menuIconStyle}><FiLogOut size={15} strokeWidth={2} /></span>
             <span style={{ flex: 1 }}>Sign out</span>
           </button>
         </div>
