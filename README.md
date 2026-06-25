@@ -12,6 +12,7 @@ Two entry points (an MCP server a coding agent calls, and a dashboard a human us
 - [Repository layout](#repository-layout)
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
+- [Self-hosting](#self-hosting)
 - [Security model](#security-model)
 - [Builds and licensing](#builds-and-licensing)
 - [Common commands](#common-commands)
@@ -122,6 +123,55 @@ Every variable is documented inline in [`.env.example`](.env.example). The essen
 | `NEXT_PUBLIC_BACKEND_URL` / `_WEB_URL` / `_DASHBOARD_URL` | web, dashboard | Inlined at build, no secrets. |
 | `BILLING_ENABLED` / `REQUIRE_BILLING` | backend, worker, ee | Off by default; the OSS build never meters or gates. `REQUIRE_BILLING=true` fails boot if `@attest/ee` or the Dodo config is missing. |
 | `DODO_*` | ee | Merchant-of-record billing (webhook key, API key, product ids). Never logged. |
+
+## Self-hosting
+
+The OSS build runs the whole verdict loop on your own infrastructure with no functional gap versus hosted. `@attest/ee` is absent, so there is no billing, no metering, and no credit gate: runs are unlimited and the deployment is effectively single-org. Evidence is stored on local disk by default. The service graph is identical to hosted; only the commercial layer is missing.
+
+### What you run
+
+| Process | Command (after build) | Notes |
+| ------- | --------------------- | ----- |
+| backend | `node apps/backend/dist/index.js` | API on `:3000`. |
+| worker | `node apps/worker/dist/index.js` | One or more replicas; reaches the target apps (including `localhost`). |
+| dashboard | `pnpm --filter @attest/dashboard start` | `next start` on `:3001`. |
+| web | `pnpm --filter @attest/web start` | `next start` on `:3002`. |
+| mcp | `pnpm --filter @attest/mcp start` | Run per agent, wired over stdio; points at your backend with a service key. |
+
+Plus two stateful dependencies you provide: **Postgres** and **Redis**. The worker also needs a Chromium that Puppeteer can launch.
+
+### Steps
+
+1. **Install and configure.**
+
+   ```bash
+   pnpm install
+   cp .env.example .env
+   ```
+
+2. **Generate the key-encryption key.** The backend and worker fail closed at boot without it.
+
+   ```bash
+   openssl rand -base64 32        # paste into ATTEST_KEK in .env
+   ```
+
+3. **Set the rest of `.env`.** At minimum: `ATTEST_BUILD=oss`, `DATABASE_URL`, `REDIS_URL`, `BETTER_AUTH_SECRET` (another random value), `BETTER_AUTH_URL` (your backend origin), `TRUSTED_ORIGINS` (your web and dashboard origins), `OPENROUTER_API_KEY` (unless every org brings its own key), and the `NEXT_PUBLIC_*` URLs. Leave `BILLING_ENABLED` and `REQUIRE_BILLING` off. Leave `COOKIE_DOMAIN` unset for localhost; set it to your shared parent domain (e.g. `.example.com`) in production so web and dashboard share one session.
+
+4. **Choose an evidence store.** `EVIDENCE_BACKEND=disk` (default) writes to `EVIDENCE_ROOT`, a path the worker writes and the backend reads (a shared volume if they run on separate hosts). For object storage set `EVIDENCE_BACKEND=s3` and the `EVIDENCE_*` settings; any S3-protocol endpoint works, including Cloudflare R2.
+
+5. **Run migrations**, then build and start.
+
+   ```bash
+   pnpm --filter @attest/db db:migrate
+   pnpm build
+   # then start each process (table above), e.g. with your process manager / containers
+   ```
+
+Migrations are additive-first; run them as a gated step ahead of rolling out a new backend or worker so in-flight workers stay compatible.
+
+### Topology
+
+`backend` and `worker` scale independently; add worker replicas to increase run throughput. `web` and `dashboard` are lightweight surfaces you can deploy separately from the backend. Everything is distributable as containers. The KEK is injected at process start from your own secret mechanism and held in memory; the `KeyProvider` interface leaves room to swap in a KMS later without re-encrypting anything.
 
 ## Security model
 
