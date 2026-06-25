@@ -135,3 +135,4 @@
 - All `docs/technical/*` placeholders were replaced with Attest-specific content; `docs/foundational/*` are the canonical source for product + system design.
 - `docs/foundational/` is git-ignored (see `.gitignore`) - treat it as local canonical reference, not a committed artifact.
 - Doc routing for any task: see `CLAUDE.md`.
+- Landing micro-interactions (`apps/web`): added pointer-reactive clay cards (cursor-tracked light via `--mx/--my`, hover lift + inner icon/numeral settle), a CTA light-sweep on deliberate accent buttons, and marquee host hover, all CSS-driven (no new deps), reduced-motion + fine-pointer gated. Mechanism: `Reveal` gained an `interactive` flag that writes pointer position to its existing node (vars inherit to the `.clay-card` consumer); visuals live in `globals.css` (`.clay-card`, `.attest-cta`, `.attest-host`). Weighting: Jakub-subtle polish, Emil frequency gate (nav left calm).

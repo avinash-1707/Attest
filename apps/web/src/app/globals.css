@@ -98,6 +98,8 @@
   --dur-3: 200ms;
   --dur-4: 280ms;
 
+  interpolate-size: allow-keywords;
+
   /* Oxblood / rust primitives */
   --oxblood-950: #2E0E0A;
   --oxblood-900: #3E1511;
@@ -420,6 +422,131 @@
 }
 
 /* ============================================================
+   POINTER-REACTIVE CLAY CARD
+   Clay catches a soft light as the pointer crosses it, lifts on
+   hover, and settles its inner instruments (icon tile, numeral).
+   Pointer position arrives as --mx/--my (%) from Reveal's
+   `interactive` mode; absent them the sheen rests up-top-centre.
+   Hover effects gate behind a real pointer so touch never sticks.
+   ============================================================ */
+.clay-card {
+  position: relative;
+  isolation: isolate;
+  transition:
+    box-shadow var(--dur-4) var(--ease-out-expo),
+    transform var(--dur-4) var(--ease-out-expo);
+}
+
+/* Soft light pool tracking the cursor. z-index -1 paints it above the
+   card's own background but below content, so text never dims. */
+.clay-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-3) var(--ease-out);
+  background: radial-gradient(
+    16rem 16rem at var(--mx, 50%) var(--my, 0%),
+    rgba(255, 236, 222, 0.09),
+    transparent 60%
+  );
+}
+
+[data-theme='light'] .clay-card::before {
+  background: radial-gradient(
+    16rem 16rem at var(--mx, 50%) var(--my, 0%),
+    rgba(255, 252, 248, 0.85),
+    transparent 60%
+  );
+}
+
+/* Featured tier earns a touch more light. */
+.clay-card[data-featured]::before {
+  background: radial-gradient(
+    18rem 18rem at var(--mx, 50%) var(--my, 0%),
+    rgba(255, 224, 210, 0.13),
+    transparent 62%
+  );
+}
+
+/* Inner instruments respond as a set, not in isolation. */
+.clay-icon {
+  transition:
+    transform var(--dur-3) var(--ease-out),
+    box-shadow var(--dur-3) var(--ease-out);
+}
+.clay-stepnum {
+  transition: color var(--dur-3) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .clay-card:hover {
+    transform: translateY(-3px);
+    /* inline resting shadow on the card would otherwise win */
+    box-shadow: var(--clay-shadow-hover) !important;
+  }
+  .clay-card:hover::before {
+    opacity: 1;
+  }
+  .clay-card:hover .clay-icon {
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: var(--clay-shadow-hover) !important;
+  }
+  .clay-card:hover .clay-stepnum {
+    color: var(--text-muted);
+  }
+}
+
+/* ---- CTA light-sweep: a reflection glints across on hover ----
+   Deliberate, rare CTAs only (Emil's frequency gate) - never nav. */
+.attest-cta {
+  position: relative;
+  overflow: hidden;
+}
+.attest-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgba(255, 240, 230, 0.22) 50%,
+    transparent 68%
+  );
+  transform: translateX(-130%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .attest-cta:hover::after {
+    transform: translateX(130%);
+    transition: transform 0.7s var(--ease-out);
+  }
+}
+
+/* ---- Marquee host: name brightens, dot blooms on hover ---- */
+.attest-host {
+  color: var(--text-muted);
+  transition: color var(--dur-2) var(--ease-out);
+}
+.attest-host-dot {
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .attest-host:hover {
+    color: var(--text-secondary);
+  }
+  .attest-host:hover .attest-host-dot {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+}
+
+/* ============================================================
    MARKETING MOTION
    Scroll reveal is transition-based (duration-driven, NOT tied to
    scroll speed) + IntersectionObserver-gated in JS. Flat-data
@@ -656,11 +783,27 @@
 .faq-item summary::marker {
   content: '';
 }
+.faq-item .faq-chevron {
+  transition: transform var(--dur-4) var(--ease-out-expo);
+}
 .faq-item[open] .faq-chevron {
   transform: rotate(180deg);
 }
-.faq-item[open] .faq-body {
-  animation: attest-fade-up var(--dur-3) var(--ease-out) both;
+.faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    block-size var(--dur-4) var(--ease-out-expo),
+    opacity var(--dur-3) var(--ease-out),
+    transform var(--dur-4) var(--ease-out-expo),
+    content-visibility var(--dur-4) allow-discrete;
+}
+.faq-item[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -672,5 +815,9 @@
   .seal-draw {
     stroke-dashoffset: 0 !important;
     animation: none !important;
+  }
+  .faq-item::details-content,
+  .faq-item .faq-chevron {
+    transition: none !important;
   }
 }

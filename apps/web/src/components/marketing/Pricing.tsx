@@ -102,7 +102,11 @@ function CardShell({ tier, children }: { tier: Tier; children: ReactNode }) {
     border: tier.featured ? '1px solid var(--accent-primary)' : '1px solid transparent',
   };
   return (
-    <div className="relative flex flex-col" style={style}>
+    <div
+      className="clay-card relative flex h-full flex-col"
+      data-featured={tier.featured || undefined}
+      style={style}
+    >
       {tier.featured && (
         <span
           className="absolute right-5 top-0 -translate-y-1/2 uppercase"
@@ -156,9 +160,9 @@ export function Pricing() {
         </p>
       </Reveal>
 
-      <div className="mt-14 grid items-start gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-14 grid items-stretch gap-5 md:grid-cols-2 lg:grid-cols-4">
         {tiers.map((t, i) => (
-          <Reveal key={t.name} index={i}>
+          <Reveal key={t.name} index={i} interactive className="h-full">
             <CardShell tier={t}>
               <span
                 className="uppercase"
@@ -202,7 +206,7 @@ export function Pricing() {
 
               <Link
                 href={t.cta.href}
-                className="clay-interactive mt-2 inline-flex items-center justify-center"
+                className="clay-interactive attest-cta mt-2 inline-flex items-center justify-center"
                 style={{
                   width: '100%',
                   backgroundColor: t.featured ? 'var(--accent-primary)' : 'var(--surface-elevated)',

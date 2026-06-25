@@ -18,11 +18,12 @@ function Row() {
       {hosts.map((h) => (
         <span
           key={h}
-          className="flex items-center gap-3"
+          className="attest-host flex items-center gap-3"
           style={{ padding: '0 var(--space-8)', whiteSpace: 'nowrap' }}
         >
           <span
             aria-hidden
+            className="attest-host-dot"
             style={{
               width: 5,
               height: 5,
@@ -36,7 +37,6 @@ function Row() {
               fontFamily: 'var(--font-sans)',
               fontSize: 'var(--text-lg)',
               fontWeight: 500,
-              color: 'var(--text-muted)',
             }}
           >
             {h}

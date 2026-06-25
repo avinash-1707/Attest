@@ -11,6 +11,8 @@ interface RevealProps {
   style?: CSSProperties;
   /** marks each child as a terminal stream line instead of a block reveal */
   stream?: boolean;
+  /** track the pointer across this element as --mx/--my (%) for clay-card light */
+  interactive?: boolean;
   id?: string;
 }
 
@@ -23,6 +25,7 @@ export function Reveal({
   className = '',
   style,
   stream = false,
+  interactive = false,
   id,
 }: RevealProps) {
   const Tag = (as ?? 'div') as ElementType;
@@ -51,6 +54,46 @@ export function Reveal({
     io.observe(el);
     return () => io.disconnect();
   }, [shown]);
+
+  // Pointer telemetry for clay-card light. Gated to a real (non-touch) pointer
+  // and disabled under reduced-motion; writes vars directly (local read, no cascade).
+  useEffect(() => {
+    if (!interactive) return;
+    const el = ref.current;
+    if (!el || typeof matchMedia === 'undefined') return;
+    if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let raf = 0;
+    let nx = 50;
+    let ny = 0;
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      nx = ((e.clientX - r.left) / r.width) * 100;
+      ny = ((e.clientY - r.top) / r.height) * 100;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        el.style.setProperty('--mx', `${nx}%`);
+        el.style.setProperty('--my', `${ny}%`);
+        raf = 0;
+      });
+    };
+    const onLeave = () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      el.style.removeProperty('--mx');
+      el.style.removeProperty('--my');
+    };
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
+    return () => {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [interactive]);
 
   const dataAttr = stream ? { 'data-stream-line': '' } : { 'data-reveal': '' };
 

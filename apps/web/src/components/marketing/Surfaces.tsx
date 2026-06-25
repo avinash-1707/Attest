@@ -61,7 +61,8 @@ export function Surfaces() {
           <Reveal
             key={s.title}
             index={i}
-            className="attest-lift flex flex-col"
+            interactive
+            className="clay-card flex flex-col"
             style={{
               backgroundColor: 'var(--surface-raised)',
               borderRadius: 'var(--radius-clay-md)',

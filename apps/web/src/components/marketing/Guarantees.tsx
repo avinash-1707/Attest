@@ -65,7 +65,8 @@ export function Guarantees() {
           <Reveal
             key={t.k}
             index={i % 2}
-            className="flex gap-4"
+            interactive
+            className="clay-card flex gap-4"
             style={{
               backgroundColor: 'var(--surface-raised)',
               borderRadius: 'var(--radius-clay-md)',
@@ -74,7 +75,7 @@ export function Guarantees() {
             }}
           >
             <span
-              className="inline-flex shrink-0 items-center justify-center"
+              className="clay-icon inline-flex shrink-0 items-center justify-center"
               style={{
                 width: 40,
                 height: 40,

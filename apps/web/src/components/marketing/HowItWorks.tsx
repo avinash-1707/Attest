@@ -67,7 +67,8 @@ export function HowItWorks() {
           <Reveal
             key={s.n}
             index={i}
-            className="attest-lift relative overflow-hidden"
+            interactive
+            className="clay-card relative overflow-hidden"
             style={{
               backgroundColor: 'var(--surface-raised)',
               borderRadius: 'var(--radius-clay-md)',
@@ -77,7 +78,7 @@ export function HowItWorks() {
           >
             <div className="flex items-center justify-between">
               <span
-                className="inline-flex items-center justify-center"
+                className="clay-icon inline-flex items-center justify-center"
                 style={{
                   width: 56,
                   height: 56,
@@ -89,6 +90,7 @@ export function HowItWorks() {
                 <s.Icon />
               </span>
               <span
+                className="clay-stepnum"
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 'var(--text-2xl)',

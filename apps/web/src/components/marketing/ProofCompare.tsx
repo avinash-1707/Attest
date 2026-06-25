@@ -38,7 +38,8 @@ export function ProofCompare() {
         {/* The guess */}
         <Reveal
           index={0}
-          className="flex flex-col"
+          interactive
+          className="clay-card flex flex-col"
           style={{
             backgroundColor: 'var(--surface-raised)',
             borderRadius: 'var(--radius-clay-md)',
@@ -108,7 +109,8 @@ export function ProofCompare() {
         {/* The proof */}
         <Reveal
           index={1}
-          className="flex flex-col"
+          interactive
+          className="clay-card flex flex-col"
           style={{
             backgroundColor: 'var(--surface-raised)',
             borderRadius: 'var(--radius-clay-md)',

@@ -50,7 +50,7 @@ export function Hero() {
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 href="/sign-up"
-                className="inline-flex items-center clay-interactive"
+                className="inline-flex items-center clay-interactive attest-cta"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   boxShadow: 'var(--clay-shadow-accent)',
