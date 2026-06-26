@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { CreateModelKeyForm } from './CreateModelKeyForm';
 import type { ModelKeyView, ModelKeyCreate } from '@attest/contracts';
 
@@ -36,14 +37,9 @@ export function ModelKeysView({ embedded = false }: { embedded?: boolean } = {})
     deleteModelKey.mutate(deleting.id, { onSuccess: () => setDeleting(null) });
   }
 
-  return (
-    <div
-      style={
-        embedded
-          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
-          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
-      }
-    >
+  const inner = (
+    <>
+
       {embedded ? (
         <SectionHeader
           description="BYOK model keys let the worker call LLM providers using your own credentials. Keys are sealed server-side and never returned."
@@ -132,8 +128,18 @@ export function ModelKeysView({ embedded = false }: { embedded?: boolean } = {})
         confirmLabel="Delete key"
         loading={deleteModelKey.isPending}
       />
-    </div>
+    </>
   );
+
+  if (embedded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        {inner}
+      </div>
+    );
+  }
+
+  return <PageContainer>{inner}</PageContainer>;
 }
 
 function Th({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {

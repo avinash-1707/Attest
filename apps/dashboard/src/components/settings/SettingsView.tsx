@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { KeysView } from '@/components/management/keys/KeysView';
 import { ModelKeysView } from '@/components/management/model-keys/ModelKeysView';
 import { CredentialsView } from '@/components/management/credentials/CredentialsView';
@@ -18,15 +19,7 @@ export function SettingsView() {
   const [tab, setTab] = useState<SettingsTab>('keys');
 
   return (
-    <div
-      style={{
-        padding: 'var(--space-8)',
-        maxWidth: 860,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-6)',
-      }}
-    >
+    <PageContainer>
       <PageHeader
         title="Settings"
         description="Manage API keys, model keys, and login credentials for your workspace."
@@ -72,6 +65,6 @@ export function SettingsView() {
         {tab === 'model-keys' && <ModelKeysView embedded />}
         {tab === 'credentials' && <CredentialsView embedded />}
       </div>
-    </div>
+    </PageContainer>
   );
 }

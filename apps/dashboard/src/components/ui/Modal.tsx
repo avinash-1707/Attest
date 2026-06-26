@@ -67,7 +67,7 @@ export function Modal({ open, onClose, title, children, width = 480 }: ModalProp
         className={open ? 'attest-dialog-in' : 'attest-dialog-out'}
         style={{
           width: '100%',
-          maxWidth: width,
+          maxWidth: `min(${width}px, calc(100vw - var(--space-8)))`,
           backgroundColor: 'var(--surface-raised)',
           borderRadius: 'var(--radius-clay-md)',
           boxShadow: 'var(--clay-shadow-hover)',

@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Skeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import type { BadgeStatus } from '@/components/ui/Badge';
+import { PageContainer } from '@/components/ui/PageContainer';
 import type { RunStatusView, Attestation, AttestationStep, Failure, EvidenceRefView } from '@attest/contracts';
 
 interface RunDetailProps {
@@ -50,21 +51,19 @@ export function RunDetail({ id }: RunDetailProps) {
 
   if (runPending) {
     return (
-      <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <PageContainer>
         {breadcrumb}
         <VerdictHeroSkeleton />
-      </div>
+      </PageContainer>
     );
   }
 
   if (runError || !run) {
     return (
-      <div style={{ padding: 'var(--space-8)' }}>
+      <PageContainer>
         {breadcrumb}
-        <div style={{ marginTop: 'var(--space-6)' }}>
-          <ErrorMessage message="Run not found or you do not have access to it." />
-        </div>
-      </div>
+        <ErrorMessage message="Run not found or you do not have access to it." />
+      </PageContainer>
     );
   }
 
@@ -73,7 +72,7 @@ export function RunDetail({ id }: RunDetailProps) {
   const evidenceErrorMsg = evidenceError ? (evidenceError as Error).message : null;
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', animation: 'attest-fade-up var(--dur-3) var(--ease-out) both' }}>
+    <PageContainer style={{ animation: 'attest-fade-up var(--dur-3) var(--ease-out) both' }}>
       {breadcrumb}
 
       <VerdictHero run={run} attestation={attestation ?? null} attPending={attPending} />
@@ -99,7 +98,7 @@ export function RunDetail({ id }: RunDetailProps) {
       )}
 
       <RunMetadata run={run} />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -185,6 +184,7 @@ function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
               color: 'var(--text-primary)',
               letterSpacing: 'var(--tracking-tight)',
               marginBottom: 'var(--space-2)',
+              maxWidth: 720,
             }}
           >
             {run.goal}
@@ -405,6 +405,7 @@ function FailureDossier({ failure }: { failure: Failure }) {
                 lineHeight: 1.65,
                 fontWeight: 500,
                 margin: 0,
+                maxWidth: 720,
               }}
             >
               {failure.suggestedNextAction}
@@ -774,6 +775,7 @@ function DossierField({ label, value }: { label: string; value: string }) {
           lineHeight: 1.65,
           fontWeight: 400,
           margin: 0,
+          maxWidth: 720,
         }}
       >
         {value}

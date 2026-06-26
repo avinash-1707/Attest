@@ -43,6 +43,10 @@
 
 /* ---- Primitive scale ---- */
 :root {
+  /* Page layout */
+  --page-max: 1440px;
+  --topbar-height: 56px;
+
   /* Fonts - populated by next/font CSS vars injected on <html> */
   --font-sans: var(--font-dm-sans), 'Helvetica Neue', Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', 'Fira Code', monospace;
@@ -448,6 +452,40 @@ body {
   @keyframes attest-skeleton-pulse {
     0%, 100% { opacity: 0.7; }
     50% { opacity: 0.7; }
+  }
+}
+
+/* ---- Drawer slide-in ---- */
+@keyframes attest-drawer-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes attest-drawer-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes attest-drawer-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes attest-drawer-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
   }
 }
 

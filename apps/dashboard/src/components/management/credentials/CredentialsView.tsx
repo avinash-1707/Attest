@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { CreateCredentialForm } from './CreateCredentialForm';
 import type { AppCredentialView, AppCredentialCreate } from '@attest/contracts';
 
@@ -50,14 +51,9 @@ export function CredentialsView({ initialAppId, embedded = false }: CredentialsV
     ? `Login credentials for ${filteredApp}. Values are sealed server-side and never returned.`
     : 'Login credentials injected at run time. Values are sealed server-side and never returned.';
 
-  return (
-    <div
-      style={
-        embedded
-          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
-          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
-      }
-    >
+  const inner = (
+    <>
+
       {embedded ? (
         <SectionHeader
           description={description}
@@ -167,8 +163,18 @@ export function CredentialsView({ initialAppId, embedded = false }: CredentialsV
         confirmLabel="Delete credential"
         loading={deleteCredential.isPending}
       />
-    </div>
+    </>
   );
+
+  if (embedded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        {inner}
+      </div>
+    );
+  }
+
+  return <PageContainer>{inner}</PageContainer>;
 }
 
 function Th({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {

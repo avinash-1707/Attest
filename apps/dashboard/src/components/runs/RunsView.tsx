@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { CreateRunForm } from './CreateRunForm';
 import type { RunListItem, RunCreate } from '@attest/contracts';
 import type { BadgeStatus } from '@/components/ui/Badge';
@@ -48,7 +49,7 @@ export function RunsView() {
   }
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}> {/* wide table width; standard content pages use 800 */}
+    <PageContainer>
       <PageHeader
         title="Runs"
         description="Attestation runs submitted via the MCP server or dashboard. Click any row to see the full report."
@@ -123,7 +124,7 @@ export function RunsView() {
           error={createRun.error ? (createRun.error as Error).message : null}
         />
       </Modal>
-    </div>
+    </PageContainer>
   );
 }
 

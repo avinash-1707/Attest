@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { OnboardingCard } from './OnboardingCard';
 import type { BadgeStatus } from '@/components/ui/Badge';
 
@@ -28,15 +29,7 @@ export function HomePlaceholder() {
   const zeroApps = !appsPending && activeApps.length === 0;
 
   return (
-    <div
-      style={{
-        padding: 'var(--space-8)',
-        maxWidth: 800,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-8)',
-      }}
-    >
+    <PageContainer style={{ gap: 'var(--space-8)' }}>
       <PageHeader
         title={`Welcome, ${firstName}`}
         description="Overview of recent attestation runs for this workspace."
@@ -216,7 +209,7 @@ export function HomePlaceholder() {
           </div>
         )}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

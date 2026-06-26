@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AppShell } from '@/components/shell/AppShell';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 
 export const metadata: Metadata = {
   title: 'Profile - Attest',
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
   return (
     <AppShell>
-      <div style={{ padding: 'var(--space-8)', maxWidth: 800, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      <PageContainer>
         <PageHeader
           title="Profile"
           description="Your account details and preferences."
@@ -19,7 +20,7 @@ export default function ProfilePage() {
           title="Coming soon"
           description="Profile management will be available here."
         />
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

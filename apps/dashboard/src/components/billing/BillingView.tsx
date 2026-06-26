@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 
 function planLabel(planId: string): string {
   if (planId === 'team') return 'Team';
@@ -166,15 +167,7 @@ export function BillingView() {
   }
 
   return (
-    <div
-      style={{
-        padding: 'var(--space-8)',
-        maxWidth: 820,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-6)',
-      }}
-    >
+    <PageContainer>
       <PageHeader
         title="Billing"
         description="Credits fund attestation runs. Each run costs approximately 10 credits."
@@ -409,6 +402,6 @@ export function BillingView() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

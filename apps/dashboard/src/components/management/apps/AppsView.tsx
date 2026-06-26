@@ -10,6 +10,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { AppForm } from './AppForm';
 import type { AppView } from '@attest/contracts';
 import Link from 'next/link';
@@ -41,7 +42,7 @@ export function AppsView() {
   const activeApps = (apps ?? []).filter((a) => !a.archivedAt);
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <PageContainer>
       <PageHeader
         title="Apps"
         description="Apps scope which URLs a run may target. The allowlist gates every submitted run."
@@ -122,7 +123,7 @@ export function AppsView() {
         confirmLabel="Archive app"
         loading={deleteApp.isPending}
       />
-    </div>
+    </PageContainer>
   );
 }
 

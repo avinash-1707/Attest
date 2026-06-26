@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageContainer } from '@/components/ui/PageContainer';
 import { CreateKeyForm } from './CreateKeyForm';
 import { NewKeyReveal } from './NewKeyReveal';
 import type { AppKeyView, AppKeyCreated, AppKeyCreate } from '@attest/contracts';
@@ -42,14 +43,9 @@ export function KeysView({ embedded = false }: { embedded?: boolean } = {}) {
 
   const appMap = new Map((apps ?? []).map((a) => [a.id, a.name]));
 
-  return (
-    <div
-      style={
-        embedded
-          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
-          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
-      }
-    >
+  const inner = (
+    <>
+
       {embedded ? (
         <SectionHeader
           description="Service keys authenticate run submissions from CI and the MCP server. Each key is scoped to one or more apps."
@@ -153,8 +149,18 @@ export function KeysView({ embedded = false }: { embedded?: boolean } = {}) {
         confirmLabel="Revoke key"
         loading={revokeKey.isPending}
       />
-    </div>
+    </>
   );
+
+  if (embedded) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        {inner}
+      </div>
+    );
+  }
+
+  return <PageContainer>{inner}</PageContainer>;
 }
 
 function Th({ children, style }: { children?: React.ReactNode; style?: React.CSSProperties }) {

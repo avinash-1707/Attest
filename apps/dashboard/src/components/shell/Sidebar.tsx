@@ -19,15 +19,10 @@ export function Sidebar() {
     : `var(--space-3) var(--space-2)`;
 
   return (
-    <>
-      {/* In-flow spacer reserves the collapsed rail; the real sidebar is a fixed overlay that
-          expands over the content on hover, so expansion never reflows the page. */}
-      <div aria-hidden style={{ width: COLLAPSED_WIDTH, flexShrink: 0 }} />
-
-      <aside
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
-        style={{
+    <aside
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      style={{
           position: 'fixed',
           left: 0,
           top: 0,
@@ -43,8 +38,8 @@ export function Sidebar() {
           transition:
             'width var(--dur-4) var(--ease-out), box-shadow var(--dur-4) var(--ease-out)',
         }}
-      >
-        <SidebarExpandedProvider value={expanded}>
+    >
+      <SidebarExpandedProvider value={expanded}>
           <div
             style={{
               padding: expanded
@@ -117,8 +112,7 @@ export function Sidebar() {
           >
             <UserMenu />
           </div>
-        </SidebarExpandedProvider>
-      </aside>
-    </>
+      </SidebarExpandedProvider>
+    </aside>
   );
 }
