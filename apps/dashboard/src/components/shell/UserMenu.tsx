@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiChevronUp, FiChevronDown, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiChevronUp, FiChevronDown, FiUser, FiLogOut } from 'react-icons/fi';
 import { useSession, signOut } from '@/lib/auth-client';
 import { WEB_URL } from '@/lib/env';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { SettingsModal } from './SettingsModal';
 import { useSidebarExpanded } from './SidebarContext';
 
 export function UserMenu() {
@@ -15,7 +14,6 @@ export function UserMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -179,16 +177,6 @@ export function UserMenu() {
             <span aria-hidden="true" style={menuIconStyle}><FiUser size={15} strokeWidth={2} /></span>
             <span style={{ flex: 1 }}>Profile</span>
           </button>
-          <button
-            role="menuitem"
-            onClick={() => { setOpen(false); setSettingsOpen(true); }}
-            style={menuItemStyle('var(--text-primary)')}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-          >
-            <span aria-hidden="true" style={menuIconStyle}><FiSettings size={15} strokeWidth={2} /></span>
-            <span style={{ flex: 1 }}>Settings</span>
-          </button>
           <div style={{ height: 1, backgroundColor: 'var(--surface-border)' }} />
           <button
             role="menuitem"
@@ -202,8 +190,6 @@ export function UserMenu() {
           </button>
         </div>
       )}
-
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
 
       <ConfirmDialog
         open={confirmOpen}
