@@ -5,7 +5,8 @@ import { useKeys, useCreateKey, useRevokeKey, useApps } from '@/lib/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -15,7 +16,7 @@ import { NewKeyReveal } from './NewKeyReveal';
 import type { AppKeyView, AppKeyCreated, AppKeyCreate } from '@attest/contracts';
 
 export function KeysView({ embedded = false }: { embedded?: boolean } = {}) {
-  const { data: keys, isPending } = useKeys();
+  const { data: keys, isPending, error } = useKeys();
   const { data: apps } = useApps();
   const createKey = useCreateKey();
   const revokeKey = useRevokeKey();
@@ -62,11 +63,19 @@ export function KeysView({ embedded = false }: { embedded?: boolean } = {}) {
         />
       )}
 
+      {error && (
+        <ErrorMessage
+          message={`API keys failed to load: ${(error as Error).message}. Check your connection and reload.`}
+        />
+      )}
+
       {isPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4) 0' }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} height={36} />
+          ))}
         </div>
-      ) : (keys ?? []).length === 0 ? (
+      ) : (keys ?? []).length === 0 && !error ? (
         <EmptyState
           title="No API keys"
           description="Create a service key to authenticate run submissions from CI pipelines or the MCP server."

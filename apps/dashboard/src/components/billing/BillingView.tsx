@@ -5,7 +5,7 @@ import { useBillingSummary, useCheckout, useBillingPortal } from '@/lib/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { SkeletonCard } from '@/components/ui/Skeleton';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { PageHeader } from '@/components/ui/PageHeader';
 
@@ -181,8 +181,9 @@ export function BillingView() {
       />
 
       {summaryPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : summaryError ? (
         <ErrorMessage message={(summaryError as Error).message} />

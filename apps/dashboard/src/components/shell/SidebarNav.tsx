@@ -3,7 +3,7 @@
 import type { IconType } from 'react-icons';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiGrid, FiPlay, FiBox, FiCreditCard } from 'react-icons/fi';
+import { FiGrid, FiPlay, FiBox, FiCreditCard, FiSettings } from 'react-icons/fi';
 import { useSidebarExpanded } from './SidebarContext';
 
 interface NavItem {
@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/runs', label: 'Runs', icon: FiPlay },
   { href: '/apps', label: 'Apps', icon: FiBox },
   { href: '/billing', label: 'Billing', icon: FiCreditCard },
+  { href: '/settings', label: 'Settings', icon: FiSettings },
 ];
 
 export function SidebarNav() {

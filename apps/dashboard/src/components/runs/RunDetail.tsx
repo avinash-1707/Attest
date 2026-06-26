@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { Skeleton, SkeletonBlock } from '@/components/ui/Skeleton';
 import type { BadgeStatus } from '@/components/ui/Badge';
 import type { RunStatusView, Attestation, AttestationStep, Failure, EvidenceRefView } from '@attest/contracts';
 
@@ -16,23 +17,53 @@ interface RunDetailProps {
 }
 
 export function RunDetail({ id }: RunDetailProps) {
-  const { data: run, isPending: runPending } = useRun(id, { live: true });
+  const { data: run, isPending: runPending, error: runError } = useRun(id, { live: true });
   const attestationEnabled = run?.lifecycle === 'completed';
   const { data: attestation, isPending: attPending, error: attError } = useAttestation(id, { enabled: attestationEnabled });
   const { data: evidenceData, error: evidenceError } = useEvidence(id, { enabled: attestationEnabled });
 
+  const breadcrumb = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+      <Link
+        href="/runs"
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: 'var(--text-sm)',
+          color: 'var(--text-muted)',
+          textDecoration: 'none',
+        }}
+      >
+        Runs
+      </Link>
+      <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>/</span>
+      <span
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 'var(--text-xs)',
+          color: 'var(--data-text-muted)',
+        }}
+      >
+        {id}
+      </span>
+    </div>
+  );
+
   if (runPending) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-16)' }}>
-        <Spinner style={{ color: 'var(--text-muted)' }} />
+      <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        {breadcrumb}
+        <VerdictHeroSkeleton />
       </div>
     );
   }
 
-  if (!run) {
+  if (runError || !run) {
     return (
       <div style={{ padding: 'var(--space-8)' }}>
-        <ErrorMessage message="Run not found or you do not have access to it." />
+        {breadcrumb}
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <ErrorMessage message="Run not found or you do not have access to it." />
+        </div>
       </div>
     );
   }
@@ -43,212 +74,297 @@ export function RunDetail({ id }: RunDetailProps) {
 
   return (
     <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-        <Link
-          href="/runs"
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-sm)',
-            color: 'var(--text-muted)',
-            textDecoration: 'none',
-          }}
-        >
-          Runs
-        </Link>
-        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)' }}>/</span>
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 'var(--text-xs)',
-            color: 'var(--data-text-muted)',
-          }}
-        >
-          {id}
-        </span>
-      </div>
+      {breadcrumb}
 
-      <RunStatusCard run={run} />
+      <VerdictHero run={run} attestation={attestation ?? null} attPending={attPending} />
 
-      {attestationEnabled && (
-        attPending ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
-            <Spinner size="sm" style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>
-              Loading attestation...
-            </span>
-          </div>
-        ) : attErrorMsg ? (
-          <ErrorMessage message={`Could not load attestation: ${attErrorMsg}`} />
-        ) : attestation ? (
-          <>
-            <AttestationCard attestation={attestation} />
-            {attestation.status === 'failed' && attestation.failure && (
-              <FailureDossier failure={attestation.failure} />
-            )}
-            {attestation.steps.length > 0 && (
-              <StepsCard steps={attestation.steps} />
-            )}
-          </>
-        ) : null
+      {attestationEnabled && attErrorMsg && (
+        <ErrorMessage message={`Attestation unavailable: ${attErrorMsg}. Check that the run completed successfully, then reload.`} />
+      )}
+
+      {run.status === 'failed' && attestation?.failure && (
+        <FailureDossier failure={attestation.failure} />
+      )}
+
+      {attestation && attestation.steps.length > 0 && (
+        <StepsCard steps={attestation.steps} />
       )}
 
       {attestationEnabled && evidenceErrorMsg && (
-        <ErrorMessage message={`Could not load evidence: ${evidenceErrorMsg}`} />
+        <ErrorMessage message={`Evidence unavailable: ${evidenceErrorMsg}. The run completed, but evidence files could not be retrieved.`} />
       )}
 
       {evidenceItems.length > 0 && (
         <EvidenceSection items={evidenceItems} />
       )}
+
+      <RunMetadata run={run} />
     </div>
   );
 }
 
-function RunStatusCard({ run }: { run: RunStatusView }) {
+function VerdictHeroSkeleton() {
   return (
-    <Card>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
-          <div>
-            <h1
-              style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'var(--text-xl)',
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                letterSpacing: 'var(--tracking-tight)',
-                marginBottom: 'var(--space-2)',
-              }}
-            >
-              {run.goal}
-            </h1>
-            <a
-              href={run.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 'var(--text-xs)',
-                color: 'var(--text-muted)',
-                textDecoration: 'none',
-                wordBreak: 'break-all',
-              }}
-            >
-              {run.url}
-            </a>
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
-            <Badge status={run.lifecycle as BadgeStatus} />
-            {run.status && <Badge status={run.status as BadgeStatus} />}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: 'var(--space-4)',
-            borderTop: '1px solid var(--surface-border)',
-            paddingTop: 'var(--space-4)',
-          }}
-        >
-          <MetaField label="Run ID" value={run.runId} mono />
-          <MetaField label="App ID" value={run.appId} mono />
-          <MetaField label="Source" value={run.source} mono />
-          <MetaField label="Attempt" value={String(run.attempt + 1)} mono />
-          {run.startedAt && (
-            <MetaField
-              label="Started"
-              value={new Date(run.startedAt).toLocaleString(undefined, {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
-              })}
-              mono
-            />
-          )}
-          {run.finishedAt && (
-            <MetaField
-              label="Finished"
-              value={new Date(run.finishedAt).toLocaleString(undefined, {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
-              })}
-              mono
-            />
-          )}
-          {run.durationMs != null && (
-            <MetaField label="Duration" value={formatDuration(run.durationMs)} mono />
-          )}
-        </div>
-
-        {run.lifecycle === 'queued' || run.lifecycle === 'running' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-muted)' }}>
-            <Spinner size="sm" style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)' }}>
-              {run.lifecycle === 'queued' ? 'Waiting in queue...' : 'Run in progress...'}
-            </span>
-          </div>
-        ) : null}
-
-        {run.error && (
-          <ErrorMessage message={run.error} />
-        )}
+    <div
+      style={{
+        borderRadius: 'var(--radius-0)',
+        border: '1px solid var(--data-border)',
+        backgroundColor: 'var(--data-surface)',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ padding: 'var(--space-5) var(--space-6)', borderBottom: '1px solid var(--data-border)' }}>
+        <Skeleton height={24} width="30%" />
       </div>
-    </Card>
+      <div style={{ padding: 'var(--space-6)' }}>
+        <SkeletonBlock rows={2} />
+      </div>
+    </div>
   );
 }
 
-function AttestationCard({ attestation }: { attestation: Attestation }) {
-  const verdictColors: Record<string, { bg: string; text: string }> = {
-    passed: { bg: 'var(--color-pass)', text: 'var(--color-pass-text)' },
-    failed: { bg: 'var(--color-fail)', text: 'var(--color-fail-text)' },
-    inconclusive: { bg: 'var(--color-inconclusive)', text: 'var(--color-inconclusive-text)' },
-  };
-  const colors = verdictColors[attestation.status] ?? verdictColors['inconclusive'];
+interface VerdictHeroProps {
+  run: RunStatusView;
+  attestation: Attestation | null;
+  attPending: boolean;
+}
 
-  return (
-    <Card className="attest-enter">
-      <CardHeader>Attestation</CardHeader>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
+  const isLive = run.lifecycle === 'queued' || run.lifecycle === 'running';
+  const isCompleted = run.lifecycle === 'completed';
+
+  const verdictMap: Record<string, { bg: string; text: string; symbol: string; label: string }> = {
+    passed: { bg: 'var(--color-pass)', text: 'var(--color-pass-text)', symbol: '+', label: 'PASSED' },
+    failed: { bg: 'var(--color-fail)', text: 'var(--color-fail-text)', symbol: '-', label: 'FAILED' },
+    inconclusive: { bg: 'var(--color-warn)', text: 'var(--color-warn-text)', symbol: '~', label: 'INCONCLUSIVE' },
+  };
+
+  const verdict = run.status ? (verdictMap[run.status] ?? verdictMap['inconclusive']) : null;
+
+  if (isLive || (isCompleted && attPending)) {
+    return (
+      <div
+        aria-live="polite"
+        style={{
+          borderRadius: 'var(--radius-0)',
+          border: '1px solid var(--data-border)',
+          backgroundColor: 'var(--data-surface)',
+          overflow: 'hidden',
+        }}
+      >
         <div
           style={{
+            backgroundColor: 'var(--surface-elevated)',
+            borderBottom: '1px solid var(--data-border)',
+            padding: 'var(--space-4) var(--space-6)',
             display: 'flex',
             alignItems: 'center',
             gap: 'var(--space-3)',
-            padding: 'var(--space-3) var(--space-4)',
-            backgroundColor: (colors ?? { bg: 'var(--data-surface)' }).bg,
-            borderRadius: 'var(--radius-xs)',
-            border: '1px solid var(--data-border)',
+          }}
+        >
+          <Spinner size="sm" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 500,
+              color: 'var(--data-text)',
+              letterSpacing: 'var(--tracking-wide)',
+              textTransform: 'uppercase',
+            }}
+          >
+            {run.lifecycle === 'queued' ? 'Waiting in queue' : isCompleted ? 'Reading attestation...' : 'Run in progress'}
+          </span>
+        </div>
+        <div style={{ padding: 'var(--space-6)' }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-xl)',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              letterSpacing: 'var(--tracking-tight)',
+              marginBottom: 'var(--space-2)',
+            }}
+          >
+            {run.goal}
+          </p>
+          <a
+            href={run.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              wordBreak: 'break-all',
+            }}
+          >
+            {run.url}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!verdict) {
+    const isCanceled = run.lifecycle === 'canceled';
+    return (
+      <div
+        style={{
+          borderRadius: 'var(--radius-0)',
+          border: '1px solid var(--data-border)',
+          backgroundColor: 'var(--data-surface)',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: 'var(--surface-elevated)',
+            borderBottom: '1px solid var(--data-border)',
+            padding: 'var(--space-4) var(--space-6)',
           }}
         >
           <span
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 'var(--text-xs)',
-              fontWeight: 600,
-              letterSpacing: 'var(--tracking-wider)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 500,
+              color: 'var(--data-text-muted)',
+              letterSpacing: 'var(--tracking-wide)',
               textTransform: 'uppercase',
-              color: (colors ?? { text: 'var(--data-text)' }).text,
             }}
           >
-            {attestation.status}
+            {isCanceled ? '× CANCELED' : '· PENDING'}
           </span>
+        </div>
+        <div style={{ padding: 'var(--space-6)' }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-xl)',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              marginBottom: 'var(--space-2)',
+              letterSpacing: 'var(--tracking-tight)',
+            }}
+          >
+            {run.goal}
+          </p>
+          <a
+            href={run.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              wordBreak: 'break-all',
+            }}
+          >
+            {run.url}
+          </a>
+          {run.error && (
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <ErrorMessage message={`Run canceled: ${run.error}`} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="attest-enter"
+      style={{
+        borderRadius: 'var(--radius-0)',
+        border: '1px solid var(--data-border)',
+        backgroundColor: 'var(--data-surface)',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: verdict.bg,
+          borderBottom: '1px solid var(--data-border)',
+          padding: 'var(--space-4) var(--space-6)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--text-xl)',
+            fontWeight: 700,
+            color: verdict.text,
+            lineHeight: 1,
+          }}
+        >
+          {verdict.symbol}
+        </span>
+        <span
+          role="status"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--text-md)',
+            fontWeight: 600,
+            letterSpacing: 'var(--tracking-wide)',
+            textTransform: 'uppercase',
+            color: verdict.text,
+          }}
+        >
+          {verdict.label}
+        </span>
+        {attestation && (
           <span
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 'var(--text-2xs)',
-              color: (colors ?? { text: 'var(--data-text-muted)' }).text,
-              opacity: 0.7,
+              color: verdict.text,
+              opacity: 0.6,
+              marginLeft: 'auto',
             }}
           >
             schema {attestation.schemaVersion}
           </span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-3)' }}>
-          <MetaField label="Steps" value={String(attestation.steps.length)} mono />
-          <MetaField label="Duration" value={formatDuration(attestation.durationMs)} mono />
-          <MetaField label="Source" value={attestation.source} mono />
-        </div>
+        )}
       </div>
-    </Card>
+
+      <div style={{ padding: 'var(--space-6)' }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: 'var(--text-xl)',
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            letterSpacing: 'var(--tracking-tight)',
+            marginBottom: 'var(--space-2)',
+          }}
+        >
+          {run.goal}
+        </p>
+        <a
+          href={run.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--text-muted)',
+            textDecoration: 'none',
+            wordBreak: 'break-all',
+          }}
+        >
+          {run.url}
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -256,35 +372,55 @@ function FailureDossier({ failure }: { failure: Failure }) {
   return (
     <Card className="attest-enter" style={{ ['--stagger-index']: 1 } as React.CSSProperties}>
       <CardHeader>
-        <span style={{ color: 'var(--color-fail-text)' }}>Failure Analysis</span>
+        <span style={{ color: 'var(--color-fail-text)' }}>Failure analysis</span>
       </CardHeader>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+        {failure.suggestedNextAction && (
+          <div
+            style={{
+              backgroundColor: 'var(--data-surface)',
+              border: '1px solid var(--data-border)',
+              borderLeft: '3px solid var(--accent-primary)',
+              padding: 'var(--space-4)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                letterSpacing: 'var(--tracking-wider)',
+                textTransform: 'uppercase',
+                marginBottom: 'var(--space-2)',
+              }}
+            >
+              Next action
+            </div>
+            <p
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 'var(--text-base)',
+                color: 'var(--text-primary)',
+                lineHeight: 1.65,
+                fontWeight: 500,
+                margin: 0,
+              }}
+            >
+              {failure.suggestedNextAction}
+            </p>
+          </div>
+        )}
+
         <DossierField label="Failed at step" value={failure.step} />
         <DossierField label="Reason" value={failure.reason} />
         <DossierField label="Root cause hypothesis" value={failure.rootCauseHypothesis} />
-        <DossierField
-          label="Suggested next action"
-          value={failure.suggestedNextAction}
-          highlight
-        />
 
         {(failure.evidence.console.length > 0 || failure.evidence.network.length > 0) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             {failure.evidence.console.length > 0 && (
               <div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 600,
-                    color: 'var(--text-muted)',
-                    letterSpacing: 'var(--tracking-wider)',
-                    textTransform: 'uppercase',
-                    marginBottom: 'var(--space-2)',
-                  }}
-                >
-                  Console
-                </div>
+                <SectionLabel>Console</SectionLabel>
                 <pre
                   style={{
                     fontFamily: 'var(--font-mono)',
@@ -309,19 +445,7 @@ function FailureDossier({ failure }: { failure: Failure }) {
 
             {failure.evidence.network.length > 0 && (
               <div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'var(--text-xs)',
-                    fontWeight: 600,
-                    color: 'var(--text-muted)',
-                    letterSpacing: 'var(--tracking-wider)',
-                    textTransform: 'uppercase',
-                    marginBottom: 'var(--space-2)',
-                  }}
-                >
-                  Network
-                </div>
+                <SectionLabel>Network</SectionLabel>
                 <pre
                   style={{
                     fontFamily: 'var(--font-mono)',
@@ -432,7 +556,7 @@ function EvidenceSection({ items }: { items: EvidenceRefView[] }) {
 
         {snapshots.length > 0 && (
           <div>
-            <SectionLabel>DOM Snapshots</SectionLabel>
+            <SectionLabel>DOM snapshots</SectionLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {snapshots.map((item) => (
                 <EvidenceLink key={item.ref} item={item} />
@@ -450,6 +574,46 @@ function EvidenceSection({ items }: { items: EvidenceRefView[] }) {
               ))}
             </div>
           </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function RunMetadata({ run }: { run: RunStatusView }) {
+  return (
+    <Card>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 'var(--space-4)',
+        }}
+      >
+        <MetaField label="Run ID" value={run.runId} mono />
+        <MetaField label="App ID" value={run.appId} mono />
+        <MetaField label="Source" value={run.source} mono />
+        <MetaField label="Attempt" value={String(run.attempt + 1)} mono />
+        {run.startedAt && (
+          <MetaField
+            label="Started"
+            value={new Date(run.startedAt).toLocaleString(undefined, {
+              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+            })}
+            mono
+          />
+        )}
+        {run.finishedAt && (
+          <MetaField
+            label="Finished"
+            value={new Date(run.finishedAt).toLocaleString(undefined, {
+              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+            })}
+            mono
+          />
+        )}
+        {run.durationMs != null && (
+          <MetaField label="Duration" value={formatDuration(run.durationMs)} mono />
         )}
       </div>
     </Card>
@@ -488,7 +652,7 @@ function EvidenceScreenshot({ item }: { item: EvidenceRefView }) {
             color: 'var(--text-muted)',
           }}
         >
-          Screenshot could not be loaded.
+          Screenshot unavailable: the file could not be loaded from the evidence store.
         </div>
       ) : (
         <img
@@ -551,7 +715,7 @@ function EvidenceLink({ item }: { item: EvidenceRefView }) {
           flexShrink: 0,
         }}
       >
-        Open
+        View evidence
       </a>
     </div>
   );
@@ -586,7 +750,7 @@ function MetaField({ label, value, mono = false }: { label: string; value: strin
   );
 }
 
-function DossierField({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+function DossierField({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div
@@ -606,9 +770,9 @@ function DossierField({ label, value, highlight = false }: { label: string; valu
         style={{
           fontFamily: 'var(--font-sans)',
           fontSize: 'var(--text-base)',
-          color: highlight ? 'var(--text-primary)' : 'var(--text-secondary)',
+          color: 'var(--text-secondary)',
           lineHeight: 1.65,
-          fontWeight: highlight ? 500 : 400,
+          fontWeight: 400,
           margin: 0,
         }}
       >

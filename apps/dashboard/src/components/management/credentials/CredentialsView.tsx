@@ -5,19 +5,22 @@ import { useCredentials, useCreateCredential, useDeleteCredential, useApps } fro
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { CreateCredentialForm } from './CreateCredentialForm';
 import type { AppCredentialView, AppCredentialCreate } from '@attest/contracts';
 
 interface CredentialsViewProps {
   initialAppId?: string;
+  embedded?: boolean;
 }
 
-export function CredentialsView({ initialAppId }: CredentialsViewProps) {
-  const { data: credentials, isPending } = useCredentials(initialAppId);
+export function CredentialsView({ initialAppId, embedded = false }: CredentialsViewProps) {
+  const { data: credentials, isPending, error } = useCredentials(initialAppId);
   const { data: apps } = useApps();
   const createCredential = useCreateCredential();
   const deleteCredential = useDeleteCredential();
@@ -48,12 +51,25 @@ export function CredentialsView({ initialAppId }: CredentialsViewProps) {
     : 'Login credentials injected at run time. Values are sealed server-side and never returned.';
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      <PageHeader
-        title={filteredApp ? `Credentials - ${filteredApp}` : 'Credentials'}
-        description={description}
-        action={<Button onClick={() => setShowCreate(true)}>Add credential</Button>}
-      />
+    <div
+      style={
+        embedded
+          ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }
+          : { padding: 'var(--space-8)', maxWidth: 820, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }
+      }
+    >
+      {embedded ? (
+        <SectionHeader
+          description={description}
+          action={<Button onClick={() => setShowCreate(true)}>Add credential</Button>}
+        />
+      ) : (
+        <PageHeader
+          title={filteredApp ? `Credentials - ${filteredApp}` : 'Credentials'}
+          description={description}
+          action={<Button onClick={() => setShowCreate(true)}>Add credential</Button>}
+        />
+      )}
 
       {filteredApp && (
         <div
@@ -73,11 +89,19 @@ export function CredentialsView({ initialAppId }: CredentialsViewProps) {
         </div>
       )}
 
+      {error && (
+        <ErrorMessage
+          message={`Credentials failed to load: ${(error as Error).message}. Check your connection and reload.`}
+        />
+      )}
+
       {isPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4) 0' }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} height={36} />
+          ))}
         </div>
-      ) : (credentials ?? []).length === 0 ? (
+      ) : (credentials ?? []).length === 0 && !error ? (
         <EmptyState
           title="No credentials"
           description="Add login credentials to let the worker authenticate on behalf of a user during runs."

@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CreateRunForm } from './CreateRunForm';
@@ -19,7 +20,7 @@ type VerdictFilter = 'all' | 'passed' | 'failed' | 'inconclusive';
 
 export function RunsView() {
   const router = useRouter();
-  const { data: runsData, isPending } = useRuns();
+  const { data: runsData, isPending, error } = useRuns();
   const createRun = useCreateRun();
 
   const [showCreate, setShowCreate] = useState(false);
@@ -56,11 +57,19 @@ export function RunsView() {
 
       <FilterTabs current={filter} onChange={setFilter} runs={allRuns} />
 
+      {error && (
+        <ErrorMessage
+          message={`Runs failed to load: ${(error as Error).message}. Check your connection and reload.`}
+        />
+      )}
+
       {isPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} height={44} />
+          ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && !error ? (
         <EmptyState
           title={filter === 'all' ? 'No runs yet' : `No ${filter} runs`}
           description={

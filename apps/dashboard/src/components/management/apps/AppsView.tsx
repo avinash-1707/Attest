@@ -5,7 +5,8 @@ import { useApps, useCreateApp, useUpdateApp, useDeleteApp } from '@/lib/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -14,7 +15,7 @@ import type { AppView } from '@attest/contracts';
 import Link from 'next/link';
 
 export function AppsView() {
-  const { data: apps, isPending } = useApps();
+  const { data: apps, isPending, error } = useApps();
   const createApp = useCreateApp();
   const updateApp = useUpdateApp();
   const deleteApp = useDeleteApp();
@@ -51,11 +52,19 @@ export function AppsView() {
         }
       />
 
+      {error && (
+        <ErrorMessage
+          message={`Apps failed to load: ${(error as Error).message}. Check your connection and reload.`}
+        />
+      )}
+
       {isPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} height={72} style={{ borderRadius: 'var(--radius-clay-md)' }} />
+          ))}
         </div>
-      ) : activeApps.length === 0 ? (
+      ) : activeApps.length === 0 && !error ? (
         <EmptyState
           title="No apps yet"
           description="Create an app to define a URL allowlist before submitting runs."

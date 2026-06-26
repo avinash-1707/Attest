@@ -5,7 +5,8 @@ import { useModelKeys, useCreateModelKey, useDeleteModelKey } from '@/lib/hooks'
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Spinner } from '@/components/ui/Spinner';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -14,7 +15,7 @@ import { CreateModelKeyForm } from './CreateModelKeyForm';
 import type { ModelKeyView, ModelKeyCreate } from '@attest/contracts';
 
 export function ModelKeysView({ embedded = false }: { embedded?: boolean } = {}) {
-  const { data: modelKeys, isPending } = useModelKeys();
+  const { data: modelKeys, isPending, error } = useModelKeys();
   const createModelKey = useCreateModelKey();
   const deleteModelKey = useDeleteModelKey();
 
@@ -56,11 +57,19 @@ export function ModelKeysView({ embedded = false }: { embedded?: boolean } = {})
         />
       )}
 
+      {error && (
+        <ErrorMessage
+          message={`Model keys failed to load: ${(error as Error).message}. Check your connection and reload.`}
+        />
+      )}
+
       {isPending ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}>
-          <Spinner style={{ color: 'var(--text-muted)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', padding: 'var(--space-4) 0' }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} height={36} />
+          ))}
         </div>
-      ) : (modelKeys ?? []).length === 0 ? (
+      ) : (modelKeys ?? []).length === 0 && !error ? (
         <EmptyState
           title="No model keys"
           description="Add a BYOK key to route LLM calls through your own provider account."
