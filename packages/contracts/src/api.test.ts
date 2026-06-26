@@ -14,6 +14,7 @@ import {
   modelKeyView,
   appCredentialCreate,
   appCredentialView,
+  avatarUploaded,
 } from './api';
 
 const TS = '2026-06-23T00:00:00.000Z';
@@ -196,5 +197,21 @@ describe('Management DTOs', () => {
     } as Record<string, unknown>);
     expect(view).not.toHaveProperty('ciphertext');
     expect(JSON.stringify(view)).not.toContain('SEALEDCRED');
+  });
+});
+
+describe('Profile DTOs', () => {
+  it('avatarUploaded accepts a valid URL', () => {
+    expect(avatarUploaded.parse({ image: 'https://api.test/avatars/u1?v=123' }).image).toBe(
+      'https://api.test/avatars/u1?v=123',
+    );
+  });
+
+  it('avatarUploaded rejects a non-URL image', () => {
+    expect(avatarUploaded.safeParse({ image: 'not-a-url' }).success).toBe(false);
+  });
+
+  it('avatarUploaded rejects a missing image field', () => {
+    expect(avatarUploaded.safeParse({}).success).toBe(false);
   });
 });

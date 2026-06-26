@@ -17,10 +17,12 @@ import {
   type BillingWebhookHandler,
   type BillingCheckout,
 } from '@attest/contracts';
-import type { EvidenceStore } from '@attest/core';
+import type { EvidenceStore, UserAssetStore } from '@attest/core';
 import { loadBillingGate, loadBillingWebhookHandler, loadBillingCheckout } from '../billing/load';
 import { createDiskEvidenceStore } from '@attest/core/adapters/storage/disk';
 import { createS3EvidenceStore } from '@attest/core/adapters/storage/s3';
+import { createDiskUserAssetStore } from '@attest/core/adapters/storage/user-assets-disk';
+import { createS3UserAssetStore } from '@attest/core/adapters/storage/user-assets-s3';
 import type { BackendConfig } from './config';
 import { buildAuth, type Auth } from '../auth/auth';
 import { createConsoleMailer } from '../auth/mailer';
@@ -42,6 +44,23 @@ function createStore(config: BackendConfig): EvidenceStore {
   return createDiskEvidenceStore({ root: config.evidence.root });
 }
 
+// Avatars share the evidence storage backend (no new config) under a disjoint `users/` prefix
+// [profile spec]. Same disk/s3 branch on config.evidence as createStore.
+function createUserAssetStore(config: BackendConfig): UserAssetStore {
+  if (config.evidence.backend === 's3') {
+    const e = config.evidence;
+    return createS3UserAssetStore({
+      bucket: e.bucket,
+      ...(e.endpoint ? { endpoint: e.endpoint } : {}),
+      ...(e.region ? { region: e.region } : {}),
+      ...(e.accessKeyId && e.secretAccessKey
+        ? { credentials: { accessKeyId: e.accessKeyId, secretAccessKey: e.secretAccessKey } }
+        : {}),
+    });
+  }
+  return createDiskUserAssetStore({ root: config.evidence.root });
+}
+
 // Composition root: the one place concrete singletons (db pool, Redis, BullMQ queue, cipher, auth)
 // are constructed [tech-arch §8, mirrors apps/worker/adapters.ts]. Built once at boot from validated
 // config; building the cipher here is also where a bad/absent KEK fails the process before listen.
@@ -54,6 +73,7 @@ export interface BackendDeps {
   redis: IORedis;
   auth: Auth;
   store: EvidenceStore;
+  userAssets: UserAssetStore;
   modelDefaults: Record<AgentRole, string>;
   // Credit gate at enqueue; no-op in the OSS build [tech-arch §13.4].
   gate: BillingGate;
@@ -95,6 +115,7 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
   });
 
   const store = createStore(config);
+  const userAssets = createUserAssetStore(config);
 
   // No-op unless billing is enabled (OSS build never gates); fail-closed if hosted and ee is absent.
   const gate = await loadBillingGate({
@@ -125,6 +146,7 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
     redis,
     auth,
     store,
+    userAssets,
     modelDefaults: config.modelDefaults,
     gate,
     webhook,

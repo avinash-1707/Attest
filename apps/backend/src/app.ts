@@ -8,6 +8,7 @@ import { registerRunRoutes } from './runs/runs.routes';
 import { registerReadRoutes } from './runs/reads.routes';
 import { registerEvidenceRoutes } from './evidence/evidence.routes';
 import { registerManagementRoutes } from './management/management.routes';
+import { registerMeRoutes } from './me.routes';
 import { registerWebhookRoutes } from './billing/webhook.routes';
 import { registerBillingRoutes } from './billing/billing.routes';
 
@@ -72,6 +73,7 @@ export function buildApp(deps: BackendDeps): FastifyInstance {
   registerReadRoutes(app, deps);
   registerEvidenceRoutes(app, deps);
   registerManagementRoutes(app, deps);
+  registerMeRoutes(app, deps);
   registerWebhookRoutes(app, deps);
   registerBillingRoutes(app, deps);
 

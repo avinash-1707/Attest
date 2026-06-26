@@ -7,3 +7,6 @@ export interface EvidenceStore {
   put(ns: TenantNamespace, blob: Buffer, kind: EvidenceKind): Promise<EvidenceRef>;
   get(ns: TenantNamespace, ref: EvidenceRef): Promise<Buffer>;
 }
+
+export type { UserAssetStore, AvatarExt } from './user-assets';
+export { assertSafeUserId } from './user-assets';

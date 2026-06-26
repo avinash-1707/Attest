@@ -30,6 +30,14 @@
     "./adapters/storage/s3": {
       "types": "./dist/adapters/storage/s3.d.ts",
       "default": "./dist/adapters/storage/s3.js"
+    },
+    "./adapters/storage/user-assets-disk": {
+      "types": "./dist/adapters/storage/user-assets-disk.d.ts",
+      "default": "./dist/adapters/storage/user-assets-disk.js"
+    },
+    "./adapters/storage/user-assets-s3": {
+      "types": "./dist/adapters/storage/user-assets-s3.d.ts",
+      "default": "./dist/adapters/storage/user-assets-s3.js"
     }
   },
   "scripts": {

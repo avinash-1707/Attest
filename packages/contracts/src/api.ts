@@ -189,6 +189,16 @@ export const appCredentialView = z.object({
 export type AppCredentialView = z.infer<typeof appCredentialView>;
 
 // ---------------------------------------------------------------------------
+// Profile: avatar upload
+// ---------------------------------------------------------------------------
+
+// POST /me/avatar is the system's FIRST non-JSON request surface: the body is multipart binary
+// (the raw image), so it has no zod request schema. Only the response is validated, here. `image`
+// is the absolute public serve URL with a ?v= cache-bust appended on each upload.
+export const avatarUploaded = z.object({ image: z.string().url() });
+export type AvatarUploaded = z.infer<typeof avatarUploaded>;
+
+// ---------------------------------------------------------------------------
 // Billing: summary read + checkout/portal (hosted tier; ee/ fulfills) [tech-arch §13.6]
 // ---------------------------------------------------------------------------
 
