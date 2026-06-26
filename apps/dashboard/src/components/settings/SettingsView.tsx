@@ -67,7 +67,7 @@ export function SettingsView() {
         })}
       </div>
 
-      <div>
+      <div key={tab} style={{ animation: 'attest-fade-up var(--dur-2) var(--ease-out) both' }}>
         {tab === 'keys' && <KeysView embedded />}
         {tab === 'model-keys' && <ModelKeysView embedded />}
         {tab === 'credentials' && <CredentialsView embedded />}

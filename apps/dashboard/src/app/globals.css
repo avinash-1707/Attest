@@ -352,6 +352,29 @@ body {
   animation-delay: calc(var(--stagger-index, 0) * 40ms);
 }
 
+/* ---- Verdict arrive: flat-data entrance, no blur (ui-context §9.2) ---- */
+@keyframes attest-verdict-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attest-verdict-arrive {
+  animation: attest-verdict-arrive var(--dur-4) var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes attest-verdict-arrive {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
 /* ---- Modal overlay + dialog ---- */
 @keyframes attest-overlay-in {
   from { opacity: 0; }

@@ -73,7 +73,7 @@ export function RunDetail({ id }: RunDetailProps) {
   const evidenceErrorMsg = evidenceError ? (evidenceError as Error).message : null;
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+    <div style={{ padding: 'var(--space-8)', maxWidth: 900, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', animation: 'attest-fade-up var(--dur-3) var(--ease-out) both' }}>
       {breadcrumb}
 
       <VerdictHero run={run} attestation={attestation ?? null} attPending={attPending} />
@@ -278,7 +278,7 @@ function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
 
   return (
     <div
-      className="attest-enter"
+      className="attest-verdict-arrive"
       style={{
         borderRadius: 'var(--radius-0)',
         border: '1px solid var(--data-border)',
@@ -582,7 +582,7 @@ function EvidenceSection({ items }: { items: EvidenceRefView[] }) {
 
 function RunMetadata({ run }: { run: RunStatusView }) {
   return (
-    <Card>
+    <Card className="attest-enter" style={{ ['--stagger-index']: 4 } as React.CSSProperties}>
       <div
         style={{
           display: 'grid',

@@ -125,7 +125,7 @@ export function HomePlaceholder() {
         )}
 
         {recentRuns.length > 0 && (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', animation: 'attest-fade-up var(--dur-3) var(--ease-out) both' }}>
             <table
               style={{
                 width: '100%',
@@ -245,20 +245,24 @@ function StatCards({ summary, runsPending, billing }: StatCardsProps) {
         label="Total"
         value={summary ? String(summary.total) : '0'}
         qualifier="loaded"
+        staggerIndex={0}
       />
       <StatCard
         label="Passed"
         value={summary ? String(summary.passed) : '0'}
         valueColor="var(--color-pass-text)"
+        staggerIndex={1}
       />
       <StatCard
         label="Failed"
         value={summary ? String(summary.failed) : '0'}
         valueColor={summary && summary.failed > 0 ? 'var(--color-fail-text)' : undefined}
+        staggerIndex={2}
       />
       <StatCard
         label="In progress"
         value={summary ? String(summary.running + summary.queued) : '0'}
+        staggerIndex={3}
       />
       {billing !== undefined && (
         <StatCard
@@ -266,6 +270,7 @@ function StatCards({ summary, runsPending, billing }: StatCardsProps) {
           value={billing?.enabled ? billing.balance.toLocaleString() : 'Unlimited'}
           valueColor={lowBalance ? 'var(--color-warn-text)' : undefined}
           warning={lowBalance ? 'Low balance' : undefined}
+          staggerIndex={4}
         />
       )}
     </div>
@@ -278,11 +283,15 @@ interface StatCardProps {
   qualifier?: string;
   valueColor?: string;
   warning?: string;
+  staggerIndex?: number;
 }
 
-function StatCard({ label, value, qualifier, valueColor, warning }: StatCardProps) {
+function StatCard({ label, value, qualifier, valueColor, warning, staggerIndex }: StatCardProps) {
   return (
-    <Card className="attest-enter">
+    <Card
+      className="attest-enter"
+      style={{ ['--stagger-index']: staggerIndex } as React.CSSProperties}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
         <span
           style={{

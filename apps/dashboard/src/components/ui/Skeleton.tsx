@@ -15,7 +15,7 @@ export function Skeleton({ width = '100%', height = 16, style }: SkeletonProps) 
         height,
         backgroundColor: 'var(--surface-elevated)',
         borderRadius: 'var(--radius-clay-sm)',
-        animation: 'attest-skeleton-pulse 1.8s ease-in-out infinite',
+        animation: 'attest-skeleton-pulse 1.8s cubic-bezier(0.37, 0, 0.63, 1) infinite',
         ...style,
       }}
     />

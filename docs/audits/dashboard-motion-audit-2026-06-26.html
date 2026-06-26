@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>attest-dashboard motion audit — 2026-06-26</title>
+  <meta name="description" content="Motion and interaction audit of the Attest dashboard UI against the project's frequency gate and design law.">
+  <style>
+    /* =====================================================
+       DEMO SHELL TOKENS + CARD LAYOUT
+       from design-motion-principles/references/demo-shell.html
+       ===================================================== */
+    :root {
+      --bg: #1a1a1a;
+      --fg: #f0f0f0;
+      --border: #333333;
+      --accent: #f0f0f0;
+      --loop-dim: rgba(240, 240, 240, 0.45);
+      --card-radius: 12px;
+      --card-padding: 20px;
+      --gap: 12px;
+      --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #ffffff;
+        --fg: #111111;
+        --border: #e5e5e5;
+        --accent: #111111;
+        --loop-dim: rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      margin: 0;
+    }
+
+    .demo-card {
+      position: relative;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: var(--card-padding);
+      max-width: 360px;
+      min-width: 280px;
+      font-family: var(--sans);
+      outline: none;
+    }
+
+    .demo-card:focus-visible { outline: none; }
+
+    .demo-card__header {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 4px;
+      padding-right: 72px;
+    }
+
+    .demo-card__subhead {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--loop-dim);
+      margin-bottom: var(--gap);
+    }
+
+    .demo-card__stage {
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .demo-card__loop-indicator {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--loop-dim);
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .demo-card__loop-indicator { display: none; }
+      [class*="__motion-target"] {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* =====================================================
+       REPORT LAYOUT TOKENS
+       ===================================================== */
+    body {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    .report-hero h1 {
+      font-size: 1.75rem;
+      margin: 0 0 4px;
+      font-weight: 700;
+    }
+
+    .report-hero__date {
+      font-family: var(--mono);
+      color: var(--loop-dim);
+      font-size: 0.875rem;
+      margin: 0 0 16px;
+    }
+
+    .report-hero__counts {
+      font-size: 1rem;
+      margin: 0 0 8px;
+    }
+
+    .report-hero__counts a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .report-hero__counts a:hover { border-bottom-style: solid; }
+
+    .report-hero__primary {
+      font-family: var(--mono);
+      color: var(--loop-dim);
+      font-size: 0.875rem;
+      margin: 0;
+    }
+
+    .report-assessment {
+      margin: 32px 0;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      padding: 20px 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+    }
+
+    .perspective-section {
+      margin: 48px 0;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .perspective-section h2 {
+      font-size: 1.25rem;
+      margin: 0 0 20px;
+    }
+
+    .perspective-section h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--loop-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 24px 0 12px;
+    }
+
+    .perspective-section ul {
+      margin: 0;
+      padding: 0 0 0 1.2em;
+      line-height: 1.7;
+    }
+
+    .perspective-section li { margin-bottom: 6px; }
+
+    .perspective-section code {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      background: rgba(128,128,128,0.1);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .perspective-section__quote {
+      margin-top: 24px;
+      padding: 12px 16px;
+      background: rgba(128,128,128,0.06);
+      border-left: 3px solid var(--accent);
+      font-size: 0.95rem;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .perspective-section__empty {
+      font-style: italic;
+      color: var(--loop-dim);
+      padding: 12px 0;
+    }
+
+    /* Finding rows */
+    .finding-row {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      align-items: start;
+      margin: 28px 0;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+    }
+
+    @media (max-width: 768px) {
+      .finding-row {
+        grid-template-columns: 1fr;
+      }
+      .demo-card { max-width: 100%; }
+    }
+
+    .finding-row__severity {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin: 0 0 6px;
+    }
+
+    .finding-row__prose h4 {
+      font-size: 1rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    .finding-row__prose p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin: 0 0 10px;
+      color: rgba(240,240,240,0.8);
+    }
+
+    @media (prefers-color-scheme: light) {
+      .finding-row__prose p { color: rgba(17,17,17,0.75); }
+    }
+
+    .finding-row__location {
+      font-size: 0.8rem;
+      margin: 6px 0 0 !important;
+    }
+
+    /* Recommendations tables */
+    .recommendations {
+      margin: 48px 0;
+      padding-top: 24px;
+      border-top: 2px solid var(--border);
+    }
+
+    .recommendations h2 {
+      font-size: 1.15rem;
+      margin: 0 0 16px;
+    }
+
+    .recommendations table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .recommendations th,
+    .recommendations td {
+      text-align: left;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .recommendations th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--loop-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .recommendations td code {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      background: rgba(128,128,128,0.1);
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    /* Reference summary */
+    .reference-summary {
+      margin: 48px 0 0;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .reference-summary h2 {
+      font-size: 1.1rem;
+      margin: 0 0 16px;
+    }
+
+    .reference-summary ul {
+      margin: 8px 0 0;
+      padding: 0 0 0 1.2em;
+    }
+
+    .reference-summary li { margin-bottom: 6px; }
+
+    /* =====================================================
+       PER-FINDING KEYFRAMES + DEMO TARGET RULES
+       ===================================================== */
+
+    /* Finding 1: Uniform attest-enter on stat cards (stagger-spam) */
+    @keyframes motion-1-cards {
+      0%   { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+      66%  { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+      100% { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+    }
+    .demo-card-1__motion-target {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .demo-card-1__motion-target .dc1-card {
+      background: rgba(128,128,128,0.12);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 10px 10px;
+      font-size: 0.7rem;
+      color: var(--loop-dim);
+    }
+    .demo-card-1__motion-target .dc1-card strong {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--fg);
+      margin-top: 4px;
+    }
+    /* Only the hero card (first) gets the entrance; others are instant */
+    .demo-card-1__motion-target .dc1-card:first-child {
+      animation: motion-1-cards 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    }
+
+    /* Finding 2: Settings tab content snap (missing transition) */
+    @keyframes motion-2-tabcontent {
+      0%   { opacity: 0; }
+      66%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    .demo-card-2__motion-target {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .demo-card-2__motion-target .dc2-tab-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+      margin-bottom: 8px;
+    }
+    .demo-card-2__motion-target .dc2-tab {
+      padding: 4px 10px 6px;
+      font-size: 0.7rem;
+      color: var(--loop-dim);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .demo-card-2__motion-target .dc2-tab.active {
+      color: var(--fg);
+      border-bottom-color: var(--accent);
+    }
+    .demo-card-2__motion-target .dc2-content {
+      animation: motion-2-tabcontent 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .demo-card-2__motion-target .dc2-row {
+      height: 8px;
+      background: rgba(128,128,128,0.18);
+      border-radius: 3px;
+    }
+    .demo-card-2__motion-target .dc2-row:last-child { width: 65%; }
+
+    /* Finding 3: Skeleton -> content hard swap (no cross-fade) */
+    @keyframes motion-3-skeleton-out {
+      0%   { opacity: 1; }
+      40%  { opacity: 0; }
+      66%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes motion-3-content-in {
+      0%   { opacity: 0; }
+      40%  { opacity: 0; }
+      66%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    .demo-card-3__motion-target {
+      position: relative;
+      width: 100%;
+      height: 60px;
+    }
+    .demo-card-3__skeleton {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      animation: motion-3-skeleton-out 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    }
+    .demo-card-3__skeleton-bar {
+      height: 10px;
+      background: rgba(128,128,128,0.25);
+      border-radius: 4px;
+    }
+    .demo-card-3__skeleton-bar:last-child { width: 60%; }
+    .demo-card-3__content {
+      position: absolute;
+      inset: 0;
+      animation: motion-3-content-in 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+      font-size: 0.75rem;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-card-3__content-badge {
+      background: rgba(45,122,71,0.3);
+      color: #4DB870;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Finding 4: VerdictHero uses attest-enter (blur-everywhere entrance on a data surface) */
+    @keyframes motion-4-verdict {
+      0%   { opacity: 0; transform: translateY(4px); }
+      66%  { opacity: 1; transform: translateY(0);   }
+      100% { opacity: 1; transform: translateY(0);   }
+    }
+    .demo-card-4__motion-target {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      animation: motion-4-verdict 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .demo-card-4__strip {
+      background: rgba(45,122,71,0.35);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-card-4__verdict-symbol {
+      font-family: var(--mono);
+      font-size: 1rem;
+      font-weight: 700;
+      color: #4DB870;
+    }
+    .demo-card-4__verdict-label {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4DB870;
+    }
+    .demo-card-4__body {
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      color: var(--loop-dim);
+    }
+
+    /* Finding 5: Skeleton using ease-in-out (wrong easing for a pulse) */
+    @keyframes motion-5-pulse-fixed {
+      0%   { opacity: 0.9; }
+      33%  { opacity: 0.45; }
+      66%  { opacity: 0.9; }
+      100% { opacity: 0.9; }
+    }
+    .demo-card-5__motion-target {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+    .demo-card-5__bar {
+      height: 10px;
+      background: rgba(128,128,128,0.3);
+      border-radius: 4px;
+      animation: motion-5-pulse-fixed 3s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    }
+    .demo-card-5__bar:nth-child(2) { animation-delay: 0.1s; }
+    .demo-card-5__bar:last-child   { width: 60%; animation-delay: 0.2s; }
+
+    /* Finding 6: RunMetadata Card has no attest-enter (motion gap) */
+    @keyframes motion-6-metadata {
+      0%   { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+      66%  { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+      100% { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+    }
+    .demo-card-6__motion-target {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      animation: motion-6-metadata 3s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    }
+    .demo-card-6__meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .demo-card-6__meta-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--loop-dim);
+    }
+    .demo-card-6__meta-value {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--fg);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="report-hero">
+    <h1>attest-dashboard motion audit</h1>
+    <p class="report-hero__date">2026-06-26</p>
+    <p class="report-hero__counts">
+      <a href="#critical-findings">&#x1F534; Critical: 3</a> &middot;
+      <a href="#important-findings">&#x1F7E1; Important: 3</a> &middot;
+      <a href="#opportunity-findings">&#x1F7E2; Opportunities: 4</a>
+    </p>
+    <p class="report-hero__primary">Primary: Emil Kowalski &#x2014; Restraint &amp; Speed</p>
+  </header>
+
+  <!-- OVERALL ASSESSMENT -->
+  <section class="report-assessment">
+    <p>
+      The dashboard's motion system is more disciplined than most — a short duration range (80–280ms), purpose-built custom easings, and a deliberate design law ("clay never carries data") give it a strong skeleton. The biggest problems are two structural gaps: the verdict hero's entrance uses <code>attest-fade-up</code>, which applies <code>filter: blur(3px)</code> to a flat-data surface in direct violation of the project's own aesthetic law; and settings tab content swaps with a hard zero-duration snap, which is jarring for a panel toggled multiple times per session. Stat cards each get an independent entrance via <code>attest-enter</code> but no <code>--stagger-index</code> offsets, so all four cards animate simultaneously, reading as a single undifferentiated burst rather than a staged arrival. The <code>RunMetadata</code> card at the bottom of RunDetail is the only card without any entrance, creating an inconsistency. Skeleton components use <code>ease-in-out</code> — correct for opacity pulses — but the transition from skeleton to real content is an instant swap with no crossfade. These are fixable in a single focused pass.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       PERSPECTIVE: EMIL KOWALSKI
+       ===================================================================== -->
+  <section class="perspective-section" id="perspective-emil">
+    <h2>Emil Kowalski &#x2014; Restraint &amp; Speed</h2>
+
+    <div class="perspective-section__working-well">
+      <h3>What's Working Well</h3>
+      <ul>
+        <li>&#x2713; Duration tokens stay within Emil's 300ms ceiling: <code>--dur-1</code> (80ms) through <code>--dur-4</code> (280ms) &#x2014; <code>globals.css:96-99</code></li>
+        <li>&#x2713; Custom Bézier easings replace default CSS built-ins &#x2014; <code>globals.css:91-94</code></li>
+        <li>&#x2713; <code>clay-interactive</code> press feedback uses 80ms &#x2014; fast enough to never feel sluggish &#x2014; <code>globals.css:305-311</code></li>
+        <li>&#x2713; Table rows in the runs list carry <em>no</em> entrance animation: flat data honoring the frequency gate &#x2014; <code>HomePlaceholder.tsx:148-215</code></li>
+        <li>&#x2713; <code>attest-spin</code> (spinner) has no entrance animation on the element itself; the spinner just runs &#x2014; correct for a live-state indicator</li>
+        <li>&#x2713; No bounce easing anywhere in the codebase &#x2014; all spring-adjacent behavior uses <code>--ease-out-expo</code>, which is appropriate for a productivity tool</li>
+      </ul>
+    </div>
+
+    <div class="perspective-section__issues" id="emil-issues">
+      <h3>Issues to Address</h3>
+
+      <!-- FINDING 1 -->
+      <div class="finding-row" id="finding-1">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F534; Critical</p>
+          <h4>Stat cards all animate simultaneously — stagger-spam without offsets</h4>
+          <p>
+            Each <code>StatCard</code> applies <code>className="attest-enter"</code> but passes no <code>--stagger-index</code>. All cards start their 200ms fade-up at the same time, producing a simultaneous burst. Per Emil, this is worse than no animation: it creates a perceptible UI hiccup on every home page visit without any orientation benefit. The frequency gate says daily-use elements should get subtle, fast motion or none at all. Four identical simultaneous fades reads as a loading artifact, not a purposeful reveal. Fix: remove <code>attest-enter</code> from StatCards entirely, or add stagger offsets of 0/1/2/3 on <code>--stagger-index</code> and reduce to a very subtle translateY of 4px with 140ms duration.
+          </p>
+          <p class="finding-row__location"><code>HomePlaceholder.tsx:285</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Staggered arrival: first card only animates</div>
+          <div class="demo-card__subhead">140ms &middot; cubic-bezier(0.25, 1, 0.5, 1)</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-1__motion-target">
+              <div class="dc1-card">Total <strong>42</strong></div>
+              <div class="dc1-card">Passed <strong>38</strong></div>
+              <div class="dc1-card">Failed <strong>4</strong></div>
+              <div class="dc1-card">Running <strong>1</strong></div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- FINDING 2 -->
+      <div class="finding-row" id="finding-2">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F534; Critical</p>
+          <h4>Settings tab content swaps with a hard zero-duration snap</h4>
+          <p>
+            <code>SettingsView</code> switches between <code>KeysView</code>, <code>ModelKeysView</code>, and <code>CredentialsView</code> via plain conditional renders with no transition. The tab <em>button</em> itself has a 140ms color + border transition, but the content area below snaps instantly. Users toggling between tabs (a moderate-frequency action, several times per session) experience a jarring cut where an entire panel disappears and another appears in one frame. Per Emil, the fix is a fast opacity-only crossfade (150ms), not a translate — content panels should not bounce around spatially when switching. Add a <code>transition: opacity 150ms ease-out</code> wrapper, or use a keyed fade approach.
+          </p>
+          <p class="finding-row__location"><code>SettingsView.tsx:70-76</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Tab content: opacity crossfade on switch</div>
+          <div class="demo-card__subhead">150ms &middot; ease-out &middot; opacity only</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-2__motion-target">
+              <div class="dc2-tab-bar">
+                <div class="dc2-tab active">API Keys</div>
+                <div class="dc2-tab">Model Keys</div>
+                <div class="dc2-tab">Credentials</div>
+              </div>
+              <div class="dc2-content">
+                <div class="dc2-row"></div>
+                <div class="dc2-row"></div>
+                <div class="dc2-row"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- FINDING 3 -->
+      <div class="finding-row" id="finding-3">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F534; Critical</p>
+          <h4>Skeleton-to-content transition is an instant hard swap</h4>
+          <p>
+            Both <code>HomePlaceholder</code> and <code>RunDetail</code> use <code>runsPending ? &lt;Skeleton /&gt; : &lt;content /&gt;</code> conditionally. When data arrives, the skeleton disappears and content appears in a single render frame. There is no crossfade, no short opacity transition. This reads as a flash — users see a white/dark pop. The fix per Emil: wrap the conditional in a keyed container and apply <code>transition-state</code> (the existing <code>opacity var(--dur-3) ease-out</code> utility in globals.css) to both elements, or at minimum apply <code>animation: attest-fade-up var(--dur-3) var(--ease-out) both</code> on the content element on mount.
+          </p>
+          <p class="finding-row__location"><code>HomePlaceholder.tsx:107-126</code>, <code>RunDetail.tsx:51-58</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Skeleton &#x2192; content: opacity crossfade</div>
+          <div class="demo-card__subhead">200ms &middot; cubic-bezier(0.25, 1, 0.5, 1)</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-3__motion-target">
+              <div class="demo-card-3__skeleton">
+                <div class="demo-card-3__skeleton-bar"></div>
+                <div class="demo-card-3__skeleton-bar"></div>
+                <div class="demo-card-3__skeleton-bar"></div>
+              </div>
+              <div class="demo-card-3__content">
+                <div class="demo-card-3__content-badge">passed</div>
+                <span style="color: var(--fg); font-size: 0.75rem;">Checkout flow verification</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="perspective-section__opportunities">
+      <h3>Opportunities</h3>
+      <ul>
+        <li>&#x1F4A1; The copy button in OnboardingCard transitions background-color and color on state change, but the text swap ("Copy" &#x2192; "Copied") is instant. A short opacity swap on the text node would make the feedback feel more settled &#x2014; <code>OnboardingCard.tsx:98-111</code></li>
+        <li>&#x1F4A1; The live-run polling banner (<code>aria-live="polite"</code>) appears instantly when a run goes in-progress. A 100ms opacity-in on the banner itself would prevent it reading as a flash &#x2014; <code>RunDetail.tsx:145-208</code></li>
+      </ul>
+    </div>
+
+    <p class="perspective-section__quote">
+      <strong>Through Emil's lens:</strong> The token system and duration range are textbook — this is a codebase that knows its frequency gate. The failures are structural gaps (no skeleton crossfade, no tab transition) rather than animation excess. Cut the simultaneous stat-card burst first; it's the most visible daily irritant.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       PERSPECTIVE: JAKUB KREHEL
+       ===================================================================== -->
+  <section class="perspective-section" id="perspective-jakub">
+    <h2>Jakub Krehel &#x2014; Production Polish</h2>
+
+    <div class="perspective-section__working-well">
+      <h3>What's Working Well</h3>
+      <ul>
+        <li>&#x2713; <code>attest-fade-up</code> correctly combines opacity + translateY + blur (Jakub's enter recipe) &#x2014; <code>globals.css:337-348</code></li>
+        <li>&#x2713; Dialog out keyframe is subtler than dialog in (smaller translateY 6px vs 8px, no blur on exit) &#x2014; <code>globals.css:379-393</code></li>
+        <li>&#x2713; <code>attest-lift</code> provides a -1px translateY hover state on interactive rows/cards &#x2014; restrained and appropriate</li>
+        <li>&#x2713; Clay press feedback (<code>.clay-interactive:active</code>) uses <code>translateY(1px) scale(0.98)</code> &#x2014; physically plausible press &#x2014; <code>globals.css:313-316</code></li>
+        <li>&#x2713; <code>FailureDossier</code> and <code>StepsCard</code> correctly use stagger indices 1 and 2 in RunDetail &#x2014; <code>RunDetail.tsx:373, 479</code></li>
+      </ul>
+    </div>
+
+    <div class="perspective-section__issues" id="jakub-issues">
+      <h3>Issues to Address</h3>
+
+      <!-- FINDING 4 -->
+      <div class="finding-row" id="finding-4">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F7E1; Important</p>
+          <h4>VerdictHero uses blur entrance on a flat-data surface</h4>
+          <p>
+            The completed verdict panel applies <code>className="attest-enter"</code>, which runs <code>attest-fade-up</code>: <code>filter: blur(3px)</code> animating to 0. The project's own design law (<code>ui-context.md §9.2</code>) explicitly prohibits "decorative motion on flat-data surfaces." Blur is a Jakub signal for "materializing" — it communicates "this element is coming into focus." On a verdict panel containing a machine-readable judgment (<code>PASSED</code>/<code>FAILED</code>), the blur implies the result is still uncertain, which directly undermines the "confident settle" the user expects. Fix: replace with an opacity-only or opacity + minimal translateY (4px, no blur) entrance using <code>--ease-out-expo</code> for a faster, more authoritative settle. The entrance should feel like a readout appearing, not a card materializing.
+          </p>
+          <p class="finding-row__location"><code>RunDetail.tsx:281</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Verdict settle: opacity + 4px translateY, no blur</div>
+          <div class="demo-card__subhead">200ms &middot; cubic-bezier(0.22, 1, 0.36, 1)</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-4__motion-target">
+              <div class="demo-card-4__strip">
+                <span class="demo-card-4__verdict-symbol">+</span>
+                <span class="demo-card-4__verdict-label">Passed</span>
+              </div>
+              <div class="demo-card-4__body">Checkout flow completes successfully on all steps.</div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- FINDING 5 -->
+      <div class="finding-row" id="finding-5">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F7E1; Important</p>
+          <h4>Skeleton pulse uses <code>ease-in-out</code> instead of a sine-shaped curve</h4>
+          <p>
+            <code>Skeleton.tsx</code> fires <code>attest-skeleton-pulse</code> at <code>animation-timing-function: ease-in-out</code> (the default, inherited from globals). The pulse keyframe (<code>0%/100% opacity:1 → 50% opacity:0.45</code>) with <code>ease-in-out</code> produces an asymmetric feel — it decelerates into the dim state and accelerates out, rather than a smooth sinusoidal breath. For a background loading indicator, a symmetric sine curve reads as more natural and less mechanical. Fix: declare <code>animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1)</code> on the skeleton element, which approximates a sine and produces a perfectly even breath. Duration 1.8s is appropriate.
+          </p>
+          <p class="finding-row__location"><code>Skeleton.tsx:18</code>, <code>globals.css:419-428</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Skeleton pulse: sine-approximated easing</div>
+          <div class="demo-card__subhead">1.8s &middot; cubic-bezier(0.37, 0, 0.63, 1)</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-5__motion-target">
+              <div class="demo-card-5__bar"></div>
+              <div class="demo-card-5__bar"></div>
+              <div class="demo-card-5__bar"></div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- FINDING 6 -->
+      <div class="finding-row" id="finding-6">
+        <div class="finding-row__prose">
+          <p class="finding-row__severity">&#x1F7E1; Important</p>
+          <h4>RunMetadata card has no entrance — inconsistent with every other card in RunDetail</h4>
+          <p>
+            <code>VerdictHero</code>, <code>FailureDossier</code>, <code>StepsCard</code>, and <code>EvidenceSection</code> all carry <code>attest-enter</code> with stagger indices 0–3. <code>RunMetadata</code> at the bottom uses a bare <code>&lt;Card&gt;</code> with no entrance. Per Jakub, using the same animation everywhere without context distinction is a problem — but so is an isolated lack of consistency within the same view. The metadata card just pops in while everything above it gracefully settles. Fix: add <code>className="attest-enter"</code> with <code>--stagger-index: 4</code>, completing the progressive reveal of the dossier.
+          </p>
+          <p class="finding-row__location"><code>RunDetail.tsx:583</code></p>
+        </div>
+        <article class="demo-card" tabindex="-1">
+          <div class="demo-card__loop-indicator">&#x21BB; looping</div>
+          <div class="demo-card__header">Metadata card: stagger-4 entrance</div>
+          <div class="demo-card__subhead">200ms + 160ms delay &middot; ease-out-expo</div>
+          <div class="demo-card__stage">
+            <div class="demo-card-6__motion-target">
+              <div class="demo-card-6__meta">
+                <span class="demo-card-6__meta-label">Run ID</span>
+                <span class="demo-card-6__meta-value">run_ab12</span>
+              </div>
+              <div class="demo-card-6__meta">
+                <span class="demo-card-6__meta-label">Source</span>
+                <span class="demo-card-6__meta-value">mcp</span>
+              </div>
+              <div class="demo-card-6__meta">
+                <span class="demo-card-6__meta-label">Duration</span>
+                <span class="demo-card-6__meta-value">12.4s</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+    </div>
+
+    <div class="perspective-section__opportunities">
+      <h3>Opportunities</h3>
+      <ul>
+        <li>&#x1F4A1; Onboarding step number badges (the 1/2/3/4 clay circles) could receive a very subtle scale(0.96)&#x2192;scale(1) entrance at mount, reinforcing the clay press language without adding motion on interaction &#x2014; <code>OnboardingCard.tsx:133-155</code></li>
+        <li>&#x1F4A1; The dossier fields in <code>FailureDossier</code> are static once rendered — appropriate. But the "Next action" callout block, which is semantically the most important piece of information, could get a very brief left-border pulse (opacity 0&#x2192;1 on the <code>borderLeft</code> accent at 200ms) to draw the eye immediately without decorating data &#x2014; <code>RunDetail.tsx:378-413</code></li>
+      </ul>
+    </div>
+
+    <p class="perspective-section__quote">
+      <strong>Through Jakub's lens:</strong> The clay press system is production-quality invisible polish. The blur-on-verdict is the single most semantically wrong motion choice in the codebase — it makes the most important information feel uncertain precisely as it resolves. Everything else is gaps, not excess.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       PERSPECTIVE: JHEY TOMPKINS
+       ===================================================================== -->
+  <section class="perspective-section" id="perspective-jhey">
+    <h2>Jhey Tompkins &#x2014; Experimentation &amp; Delight</h2>
+
+    <div class="perspective-section__working-well">
+      <h3>What's Working Well</h3>
+      <ul>
+        <li>&#x2713; The stagger system using CSS custom property <code>--stagger-index</code> with <code>calc()</code> is an elegant, low-overhead approach that avoids JavaScript-driven delays &#x2014; <code>globals.css:352-353</code></li>
+        <li>&#x2713; <code>@keyframes attest-dialog-in</code> combines scale(0.97) + translateY(8px) + blur(4px) for a full Jakub-recipe modal entrance &#x2014; a genuine quality moment</li>
+      </ul>
+    </div>
+
+    <div class="perspective-section__issues" id="jhey-issues">
+      <h3>Issues to Address</h3>
+      <p class="perspective-section__empty">No issues found at this severity level from Jhey's perspective.</p>
+    </div>
+
+    <div class="perspective-section__opportunities">
+      <h3>Opportunities</h3>
+      <ul>
+        <li>&#x1F4A1; The verdict symbol (<code>+</code>/<code>-</code>/<code>~</code>) in the hero strip could use an <code>@property</code>-animated clip-path reveal — clipping from left-to-right in ~120ms — to make the pass/fail signal land with a decisive visual "stamp" rather than fading in with the rest of the container &#x2014; <code>RunDetail.tsx:299-312</code></li>
+        <li>&#x1F4A1; The OnboardingCard is the one place where Jhey-level delight is appropriate (first-run only, rare frequency). The step number badges could use a CSS counter-based sequential entrance using <code>animation-delay: calc(var(--step-index) * 80ms)</code> &#x2014; <code>OnboardingCard.tsx:54-118</code></li>
+      </ul>
+    </div>
+
+    <p class="perspective-section__quote">
+      <strong>Through Jhey's lens:</strong> The CSS custom-property stagger approach shows real design-engineering craft. The most impactful creative opportunity is the verdict symbol stamp — the one moment in this entire UI where a brief, decisive motion could carry genuine meaning rather than decoration.
+    </p>
+  </section>
+
+  <!-- =====================================================================
+       COMBINED RECOMMENDATIONS
+       ===================================================================== -->
+  <section class="recommendations" id="critical-findings">
+    <h2>&#x1F534; Critical (Must Fix)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>File : Line</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Stat cards animate simultaneously — no stagger offsets, all fire at once</td>
+          <td><code>HomePlaceholder.tsx:285</code></td>
+          <td>Either remove <code>attest-enter</code> from <code>StatCard</code> entirely, or add <code>style={{'--stagger-index': index} as CSSProperties}</code> to each card in <code>StatCards</code>. Reduce <code>translateY</code> to 4px in the keyframe for a more restrained arrival at this frequency.</td>
+        </tr>
+        <tr>
+          <td>Settings tab content area swaps without any transition</td>
+          <td><code>SettingsView.tsx:70-76</code></td>
+          <td>Wrap the tab content <code>&lt;div&gt;</code> with <code>key={tab}</code> and add <code>className="transition-state"</code> (existing <code>opacity var(--dur-3) ease-out</code> utility), or apply <code>animation: attest-fade-up var(--dur-2) var(--ease-out) both</code> on mount for each panel.</td>
+        </tr>
+        <tr>
+          <td>Skeleton-to-content is an instant hard swap in both HomePlaceholder and RunDetail</td>
+          <td><code>HomePlaceholder.tsx:107-126</code>, <code>RunDetail.tsx:51-58</code></td>
+          <td>On the real content element that replaces the skeleton, add <code>animation: attest-fade-up var(--dur-3) var(--ease-out) both</code> — this uses the existing system keyframe and costs zero new CSS.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="recommendations" id="important-findings">
+    <h2>&#x1F7E1; Important (Should Fix)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>File : Line</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>VerdictHero uses <code>attest-enter</code> (blur entrance) on a flat-data surface — contradicts design law §9.2</td>
+          <td><code>RunDetail.tsx:281</code></td>
+          <td>Replace <code>className="attest-enter"</code> with a new <code>attest-verdict-arrive</code> class that uses <code>opacity 0&#x2192;1 + translateY 4px&#x2192;0</code> with <code>--dur-3 --ease-out-expo</code> and no <code>filter: blur()</code>. Add the keyframe to globals.css.</td>
+        </tr>
+        <tr>
+          <td>Skeleton pulse easing is asymmetric — <code>ease-in-out</code> produces a mechanical throb</td>
+          <td><code>Skeleton.tsx:18</code>, <code>globals.css:419</code></td>
+          <td>Add <code>animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1)</code> to the Skeleton component's inline style (overrides the keyframe's default). This approximates a sine curve for a natural breathing feel.</td>
+        </tr>
+        <tr>
+          <td><code>RunMetadata</code> card has no entrance, inconsistent with all other cards in RunDetail</td>
+          <td><code>RunDetail.tsx:583</code></td>
+          <td>Add <code>className="attest-enter"</code> and <code>style={{'--stagger-index': 4} as CSSProperties}</code> to the <code>&lt;Card&gt;</code> in <code>RunMetadata</code>, completing the stagger sequence.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="recommendations" id="opportunity-findings">
+    <h2>&#x1F7E2; Opportunities (Could Enhance)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Enhancement</th>
+          <th>Where</th>
+          <th>Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Copy button text swap ("Copy" &#x2192; "Copied") is instant — add a 100ms opacity crossfade on the text node</td>
+          <td><code>OnboardingCard.tsx:98-111</code></td>
+          <td>Makes copy feedback feel settled, not teleported</td>
+        </tr>
+        <tr>
+          <td>Live-run banner appears instantly — 100ms opacity-in prevents flash</td>
+          <td><code>RunDetail.tsx:145-208</code></td>
+          <td>Removes perceived flash when polling transitions to live state</td>
+        </tr>
+        <tr>
+          <td>Verdict symbol (+/-/~) could use a 120ms clip-path left-to-right reveal — a "stamp" that lands decisively</td>
+          <td><code>RunDetail.tsx:299-312</code></td>
+          <td>Gives the pass/fail signal a definitive, meaningful motion moment</td>
+        </tr>
+        <tr>
+          <td>OnboardingCard steps could use <code>animation-delay: calc(var(--step-index) * 80ms)</code> for sequential entrance (rare frequency: first-run only)</td>
+          <td><code>OnboardingCard.tsx:54-118</code></td>
+          <td>Appropriate delight for a one-time setup moment without frequency-gate concern</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- =====================================================================
+       LENS REFERENCE SUMMARY
+       ===================================================================== -->
+  <section class="reference-summary">
+    <h2>Lens Reference Summary</h2>
+    <p><strong>Which lens was referenced most:</strong> Emil Kowalski &#x2014; Restraint &amp; Speed</p>
+    <p><strong>Why:</strong> Attest is a SaaS developer dashboard for QA professionals. Users check run results and tab through settings multiple times a day. The frequency gate is the dominant design concern — every finding maps back to "does this motion earn its place at this trigger rate?"</p>
+    <p><strong>If you want to lean differently:</strong></p>
+    <ul>
+      <li>To follow Emil more strictly: remove <code>attest-enter</code> from <code>StatCard</code> entirely (zero animation, not staggered animation, is the Emil-pure call for a stat that refreshes on every page visit)</li>
+      <li>To follow Jakub more strictly: add the <code>attest-verdict-arrive</code> keyframe immediately and audit every remaining conditional render for a crossfade; Jakub's "no instant state changes" rule catches more gaps than this report surfaces</li>
+      <li>To follow Jhey more strictly: prototype the verdict-symbol clip-path stamp and the onboarding sequential entrance — both are low-risk delight moments that fit the frequency gate and could meaningfully distinguish Attest from generic SaaS dashboards</li>
+    </ul>
+  </section>
+
+</body>
+</html>
