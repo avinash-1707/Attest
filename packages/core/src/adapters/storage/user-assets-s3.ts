@@ -66,12 +66,18 @@ export function createS3UserAssetStore(opts: {
           ContentType: AVATAR_CONTENT_TYPE[ext],
         }),
       );
-      // Overwrite semantics: one object per user. Drop any prior avatar in another format.
+      // Overwrite semantics: one object per user. Drop any prior avatar in another format. The new
+      // object above is already authoritative, so these cleanup deletes are best-effort: a transient
+      // delete failure must not 500 the upload (which already succeeded) [audit 2026-06-27 L1].
       for (const other of AVATAR_EXTS) {
         if (other === ext) continue;
-        await client.send(
-          new DeleteObjectCommand({ Bucket: opts.bucket, Key: avatarKey(userId, other) }),
-        );
+        try {
+          await client.send(
+            new DeleteObjectCommand({ Bucket: opts.bucket, Key: avatarKey(userId, other) }),
+          );
+        } catch {
+          /* stale alternate-format object may linger; the freshly-written object is the source of truth */
+        }
       }
     },
 

@@ -95,11 +95,14 @@ export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
   const redis = new IORedis(config.redisUrl, { maxRetriesPerRequest: null });
   const queue = new Queue(RUN_QUEUE, { connection: redis });
 
-  // The console mailer logs OTP codes; it is the dev/self-hosted seam only. Fail loud rather than
-  // silently shipping verification codes to logs in a hosted production deploy [invariant 4].
-  if (process.env.NODE_ENV === 'production') {
+  // The console mailer logs OTP codes (incl. password-reset); it is the dev/self-hosted seam only.
+  // Fail loud on any non-dev/test environment rather than only on the literal NODE_ENV='production':
+  // a staging/preview deploy (NODE_ENV unset or 'staging') must not silently log verification codes
+  // either [invariant 4, audit 2026-06-27 L6]. Opt in explicitly with NODE_ENV=development|test.
+  const env = process.env.NODE_ENV;
+  if (env !== 'development' && env !== 'test') {
     throw new Error(
-      'No production mailer configured: the console mailer logs OTP codes and must not run in production.',
+      `No real mailer configured: the console mailer logs OTP codes and must not run outside development/test (NODE_ENV=${env ?? 'unset'}).`,
     );
   }
 

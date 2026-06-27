@@ -65,12 +65,11 @@ describe('createOpenRouterModelClient', () => {
     expect(res.text).toBe('hello world');
   });
 
-  it('yields an empty string when content is null', async () => {
+  it('throws on an empty completion (null content) rather than yielding "" [audit 2026-06-27 L8]', async () => {
     const { client } = fakeClient(null);
     const model = createOpenRouterModelClient(config, { client });
 
-    const res = await model.complete('judge', { prompt: 'hi' });
-    expect(res.text).toBe('');
+    await expect(model.complete('judge', { prompt: 'hi' })).rejects.toThrow(/empty completion/);
   });
 
   it('throws when no model is configured for the role', async () => {

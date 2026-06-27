@@ -104,10 +104,15 @@ export const appCreate = z.object({
 });
 export type AppCreate = z.infer<typeof appCreate>;
 
-export const appUpdate = z.object({
-  name: z.string().min(1).optional(),
-  allowlist: z.array(z.string().min(1)).optional(),
-});
+export const appUpdate = z
+  .object({
+    name: z.string().min(1).optional(),
+    allowlist: z.array(z.string().min(1)).optional(),
+  })
+  // Reject an empty patch so a no-op update can't masquerade as success [audit 2026-06-27 L12].
+  .refine((b) => b.name !== undefined || b.allowlist !== undefined, {
+    message: 'provide at least one field to update',
+  });
 export type AppUpdate = z.infer<typeof appUpdate>;
 
 export const appView = z.object({
@@ -128,7 +133,11 @@ export const appKeyCreate = z.object({
   name: z.string().min(1),
   // The apps this key may run against [arch §6.2]; at least one.
   appIds: z.array(z.string().min(1)).min(1),
-  expiresAt: z.iso.datetime().optional(),
+  // If given, must be in the future - a past expiry mints a key that is born dead [audit 2026-06-27 L4].
+  expiresAt: z.iso
+    .datetime()
+    .refine((d) => new Date(d).getTime() > Date.now(), { message: 'expiresAt must be in the future' })
+    .optional(),
 });
 export type AppKeyCreate = z.infer<typeof appKeyCreate>;
 

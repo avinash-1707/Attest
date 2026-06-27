@@ -49,7 +49,9 @@ export async function resolveServiceKeyContext(req: FastifyRequest, dal: DataAcc
   const resolved = await dal.resolveServiceKey(hashServiceKey(raw));
   if (!resolved) throw new ApiError(401, 'unauthorized', 'Invalid or revoked service key');
 
-  await dal.forOrg(resolved.key.orgId).appKeys.touchLastUsed(resolved.key.id);
+  // Fire-and-forget: the last-used stamp is a non-critical audit write on the hot auth path, so a
+  // transient DB blip on it must never 500 an otherwise-valid authenticated request [audit 2026-06-27 L5].
+  void dal.forOrg(resolved.key.orgId).appKeys.touchLastUsed(resolved.key.id).catch(() => undefined);
 
   return {
     orgId: resolved.key.orgId,

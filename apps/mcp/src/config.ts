@@ -10,8 +10,10 @@ const schema = z.object({
   appId: z.string().min(1),
   // Run-completion poll budget. attest/assert_outcome/verify_flow block until the run resolves;
   // these bound that wait so a stuck run surfaces a timeout rather than hanging the agent.
-  pollIntervalMs: z.number().int().positive().default(2000),
-  pollTimeoutMs: z.number().int().positive().default(180000),
+  // z.coerce so a non-numeric env value (e.g. ATTEST_POLL_INTERVAL_MS=abc) fails with a clear "expected
+  // number" at boot rather than coercing to NaN via Number() and producing a confusing error [L13].
+  pollIntervalMs: z.coerce.number().int().positive().default(2000),
+  pollTimeoutMs: z.coerce.number().int().positive().default(180000),
 });
 
 export type McpConfig = z.infer<typeof schema>;
@@ -21,7 +23,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): McpConfig {
     backendUrl: env.ATTEST_BACKEND_URL,
     serviceKey: env.ATTEST_SERVICE_KEY,
     appId: env.ATTEST_APP_ID,
-    pollIntervalMs: env.ATTEST_POLL_INTERVAL_MS ? Number(env.ATTEST_POLL_INTERVAL_MS) : undefined,
-    pollTimeoutMs: env.ATTEST_POLL_TIMEOUT_MS ? Number(env.ATTEST_POLL_TIMEOUT_MS) : undefined,
+    pollIntervalMs: env.ATTEST_POLL_INTERVAL_MS || undefined,
+    pollTimeoutMs: env.ATTEST_POLL_TIMEOUT_MS || undefined,
   });
 }

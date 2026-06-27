@@ -59,7 +59,13 @@ export function createOpenRouterModelClient(
         messages,
         ...(req.maxTokens ? { max_tokens: req.maxTokens } : {}),
       });
-      const text = completion.choices[0]?.message?.content ?? '';
+      const text = completion.choices[0]?.message?.content;
+      // An empty completion (no choices / null content) is a real fault - quota, content filter, or a
+      // truncated response - not valid output. Throw a clear error instead of returning '' that later
+      // surfaces as a misleading "non-JSON" parse failure downstream [audit 2026-06-27 L8].
+      if (text == null || text === '') {
+        throw new Error('model returned an empty completion (quota, content filter, or truncated response)');
+      }
       const cost = completion.usage?.cost;
       return typeof cost === 'number' ? { text, costUsd: cost } : { text };
     },
