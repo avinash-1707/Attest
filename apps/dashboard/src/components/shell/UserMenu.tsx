@@ -120,7 +120,10 @@ export function UserMenu() {
             alignItems: 'center',
             color: 'var(--text-muted)',
             opacity: expanded ? 1 : 0,
-            transition: 'opacity var(--dur-4) var(--ease-out)',
+            maxWidth: expanded ? 14 : 0,
+            overflow: 'hidden',
+            transition:
+              'opacity var(--dur-4) var(--ease-out), max-width var(--dur-4) var(--ease-out)',
           }}
         >
           {open ? <FiChevronDown size={14} strokeWidth={2} /> : <FiChevronUp size={14} strokeWidth={2} />}
