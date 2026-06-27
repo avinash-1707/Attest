@@ -8,7 +8,7 @@ export function Hero() {
   return (
     <div className="relative">
       <div className="instrument-grid" aria-hidden />
-      <Section className="relative pt-20 pb-14 md:pt-28 md:pb-20">
+      <Section className="relative pt-10 pb-14 md:pt-16 md:pb-20">
         <div className="grid items-center gap-12 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
           {/* Left: message */}
           <div className="attest-enter">

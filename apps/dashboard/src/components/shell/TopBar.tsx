@@ -2,8 +2,6 @@
 
 import { AttestMark } from './AttestMark';
 import { ThemeToggle } from './ThemeToggle';
-import { UserMenu } from './UserMenu';
-import { SidebarExpandedProvider } from './SidebarContext';
 
 interface TopBarProps {
   onHamburger: () => void;
@@ -72,12 +70,9 @@ export function TopBar({ onHamburger }: TopBarProps) {
         </span>
       </div>
 
-      <SidebarExpandedProvider value={true}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <ThemeToggle />
-          <UserMenu />
-        </div>
-      </SidebarExpandedProvider>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

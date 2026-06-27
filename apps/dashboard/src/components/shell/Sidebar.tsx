@@ -39,7 +39,7 @@ export function Sidebar() {
             'width var(--dur-4) var(--ease-out), box-shadow var(--dur-4) var(--ease-out)',
         }}
     >
-      <SidebarExpandedProvider value={expanded}>
+      <SidebarExpandedProvider value={{ expanded, collapse: () => setExpanded(false) }}>
           <div
             style={{
               padding: expanded

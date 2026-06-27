@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { AttestMark } from './AttestMark';
 import { SidebarNav } from './SidebarNav';
 import { OrgSwitcher } from './OrgSwitcher';
 import { UserMenu } from './UserMenu';
@@ -89,7 +90,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           overflowX: 'hidden',
         }}
       >
-        <SidebarExpandedProvider value={true}>
+        <SidebarExpandedProvider value={{ expanded: true }}>
           <DrawerContents onClose={onClose} />
         </SidebarExpandedProvider>
       </div>
@@ -107,9 +108,23 @@ function DrawerContents({ onClose }: { onClose: () => void }) {
           borderBottom: '1px solid var(--surface-border)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <AttestMark size={24} />
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-md)',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              letterSpacing: 'var(--tracking-tight)',
+            }}
+          >
+            attest
+          </span>
+        </div>
         <button
           onClick={onClose}
           aria-label="Close navigation menu"

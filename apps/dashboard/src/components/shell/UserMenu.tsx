@@ -7,10 +7,11 @@ import { WEB_URL } from '@/lib/env';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProfileModal } from './ProfileModal';
-import { useSidebarExpanded } from './SidebarContext';
+import { useSidebarExpanded, useSidebarCollapse } from './SidebarContext';
 
 export function UserMenu() {
   const expanded = useSidebarExpanded();
+  const collapseSidebar = useSidebarCollapse();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -170,7 +171,7 @@ export function UserMenu() {
 
       <ConfirmDialog
         open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        onClose={() => { setConfirmOpen(false); collapseSidebar?.(); }}
         onConfirm={handleSignOut}
         title="Sign out"
         description="You will be returned to the sign-in page. Continue?"
@@ -178,7 +179,7 @@ export function UserMenu() {
         loading={loading}
       />
 
-      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+      <ProfileModal open={profileOpen} onClose={() => { setProfileOpen(false); collapseSidebar?.(); }} />
     </div>
   );
 }

@@ -2,10 +2,19 @@
 
 import { createContext, useContext } from 'react';
 
-const SidebarExpandedContext = createContext(true);
+interface SidebarState {
+  expanded: boolean;
+  collapse?: () => void;
+}
+
+const SidebarExpandedContext = createContext<SidebarState>({ expanded: true });
 
 export const SidebarExpandedProvider = SidebarExpandedContext.Provider;
 
 export function useSidebarExpanded() {
-  return useContext(SidebarExpandedContext);
+  return useContext(SidebarExpandedContext).expanded;
+}
+
+export function useSidebarCollapse() {
+  return useContext(SidebarExpandedContext).collapse;
 }

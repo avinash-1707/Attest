@@ -93,7 +93,7 @@ export function SiteNav() {
 
   return (
     <div
-      className="sticky top-4 z-50 mx-auto w-full px-6"
+      className="sticky top-4 z-50 mx-auto mt-4 w-full px-6"
       style={{
         maxWidth: condensed ? '960px' : '1320px',
         transition: 'max-width 520ms var(--ease-out-expo)',
