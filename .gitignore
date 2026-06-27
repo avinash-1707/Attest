@@ -1,6 +1,9 @@
 # Foundational docs: local canonical reference, not committed
 docs/foundational/
 
+# Audit reports: local-only, not committed
+docs/audits/
+
 # Local agent/tooling state
 .claude/
 
