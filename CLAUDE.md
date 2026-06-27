@@ -41,3 +41,11 @@ Docs live in `docs/foundational/` (`prd`, `architecture` - canonical, git-ignore
 - Update `progress-tracker.md` after every meaningful change; update the affected doc before continuing if implementation changes architecture/scope/standards.
 
 Full conventions: `docs/technical/code-standards.md`. Workflow: `docs/technical/ai-workflow-rules.md`.
+
+## Rate limiting / trust-proxy
+
+Fastify `trustProxy` (and any `req.ip`-derived security control) MUST be a numeric hop count equal to the real proxy-chain length (1 = single LB, 2 = CDN+LB, 0 = directly internet-facing), **never `true`**. `true` trusts the whole `X-Forwarded-For` chain, so an attacker spoofs the left-most entry to bypass per-IP limits (Fastify advisory GHSA-444r-cwp2-x5xf); too-low collapses every client onto the proxy IP (one global throttle locking out all users). Set via `RATE_LIMIT_TRUST_PROXY_HOPS` (default 0). _(recorded 2026-06-27)_
+
+## Error contract: 429 vs 402
+
+`429 rate_limited` (retryable after `Retry-After`) and `402 insufficient_credits` (out of money) are distinct signals; never conflate them. Rate-limit 429s reuse the house `ApiError -> {code, message}` shape. _(recorded 2026-06-27)_
