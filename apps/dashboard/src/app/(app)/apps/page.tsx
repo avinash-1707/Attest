@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/shell/AppShell';
 import { AppsView } from '@/components/management/apps/AppsView';
 
 export const metadata: Metadata = {
@@ -7,9 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function AppsPage() {
-  return (
-    <AppShell>
-      <AppsView />
-    </AppShell>
-  );
+  return <AppsView />;
 }

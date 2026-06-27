@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/shell/AppShell';
 import { RunsView } from '@/components/runs/RunsView';
 
 export const metadata: Metadata = {
@@ -7,9 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function RunsPage() {
-  return (
-    <AppShell>
-      <RunsView />
-    </AppShell>
-  );
+  return <RunsView />;
 }

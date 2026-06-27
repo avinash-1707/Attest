@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/shell/AppShell';
 import { RunDetail } from '@/components/runs/RunDetail';
 
 export const metadata: Metadata = {
@@ -12,9 +11,5 @@ interface Props {
 
 export default async function RunDetailPage({ params }: Props) {
   const { id } = await params;
-  return (
-    <AppShell>
-      <RunDetail id={id} />
-    </AppShell>
-  );
+  return <RunDetail id={id} />;
 }

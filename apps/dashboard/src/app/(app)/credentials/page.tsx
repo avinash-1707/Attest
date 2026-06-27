@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/shell/AppShell';
 import { CredentialsView } from '@/components/management/credentials/CredentialsView';
 
 export const metadata: Metadata = {
@@ -12,9 +11,5 @@ interface Props {
 
 export default async function CredentialsPage({ searchParams }: Props) {
   const params = await searchParams;
-  return (
-    <AppShell>
-      <CredentialsView initialAppId={params.appId} />
-    </AppShell>
-  );
+  return <CredentialsView initialAppId={params.appId} />;
 }

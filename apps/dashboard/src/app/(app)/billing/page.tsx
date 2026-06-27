@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/shell/AppShell';
 import { BillingView } from '@/components/billing/BillingView';
 
 export const metadata: Metadata = {
@@ -7,9 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function BillingPage() {
-  return (
-    <AppShell>
-      <BillingView />
-    </AppShell>
-  );
+  return <BillingView />;
 }
