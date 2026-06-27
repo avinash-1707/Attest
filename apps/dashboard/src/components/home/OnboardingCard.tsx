@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader } from '@/components/ui/Card';
+import { FiCopy, FiCheck } from 'react-icons/fi';
+import { Card } from '@/components/ui/Card';
 
 const MCP_SNIPPET = `{
   "mcpServers": {
@@ -29,8 +30,20 @@ export function OnboardingCard() {
   }
 
   return (
-    <Card className="attest-enter">
-      <CardHeader>Get started</CardHeader>
+    <Card className="attest-enter" style={{ padding: 'var(--space-8)' }}>
+      <h2
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: 'var(--text-xl)',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          letterSpacing: 'var(--tracking-tight)',
+          margin: 0,
+          marginBottom: 'var(--space-2)',
+        }}
+      >
+        Get started
+      </h2>
       <p
         style={{
           fontFamily: 'var(--font-sans)',
@@ -89,24 +102,52 @@ export function OnboardingCard() {
             </pre>
             <button
               onClick={handleCopy}
-              aria-label="Copy MCP config to clipboard"
+              aria-label={copied ? 'Copied' : 'Copy MCP config to clipboard'}
+              title={copied ? 'Copied' : 'Copy'}
+              onMouseEnter={(e) => { if (!copied) e.currentTarget.style.color = 'var(--text-primary)'; }}
+              onMouseLeave={(e) => { if (!copied) e.currentTarget.style.color = 'var(--text-muted)'; }}
               style={{
                 position: 'absolute',
                 top: 'var(--space-2)',
                 right: 'var(--space-2)',
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 backgroundColor: copied ? 'var(--color-pass)' : 'var(--surface-elevated)',
                 color: copied ? 'var(--color-pass-text)' : 'var(--text-muted)',
                 border: '1px solid var(--data-border)',
                 borderRadius: 'var(--radius-clay-sm)',
-                padding: 'var(--space-1) var(--space-3)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'var(--text-xs)',
                 cursor: 'pointer',
                 transition: 'background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out)',
                 boxShadow: 'var(--clay-shadow)',
               }}
             >
-              {copied ? 'Copied' : 'Copy'}
+              <span style={{ position: 'relative', width: 15, height: 15, display: 'block' }}>
+                <FiCopy
+                  size={15}
+                  strokeWidth={2}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: copied ? 0 : 1,
+                    transform: copied ? 'scale(0.5)' : 'scale(1)',
+                    transition: 'opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out)',
+                  }}
+                />
+                <FiCheck
+                  size={15}
+                  strokeWidth={2.5}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: copied ? 1 : 0,
+                    transform: copied ? 'scale(1)' : 'scale(0.5)',
+                    transition: 'opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out)',
+                  }}
+                />
+              </span>
             </button>
           </div>
         </OnboardingStep>
