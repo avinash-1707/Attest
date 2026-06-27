@@ -1,8 +1,16 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from './types';
 import { creditLedger, usageEvent } from '../schema';
 
 export type CreditLedger = typeof creditLedger.$inferSelect;
+
+// Idempotency key for a per-run credit reservation (hold). The gate writes a hold debit at enqueue so
+// concurrent enqueues see each other's reservations (closing the check-then-act overspend race), and
+// every terminal run transition releases it [audit 2026-06-27 H7]. Distinct from the final run debit's
+// (org_id, run_id) key so the two never collide on the partial-unique index.
+export function holdKey(runId: string): string {
+  return `hold:${runId}`;
+}
 
 // The append-only credit ledger for one org, authoritative for balance + run gating [tech-arch §13.4].
 // Used only by the ee/ tier; the OSS build never calls it. Every write is idempotent so a BullMQ
@@ -80,6 +88,51 @@ export function creditLedgerRepo(db: Db, orgId: string) {
             });
         }
       });
+    },
+
+    // Reserve `holdCredits` for a run about to be enqueued, atomically: insert the hold (idempotent on
+    // its key, so a re-delivery/retry of the same run reserves once) then read the balance INCLUDING the
+    // hold inside the same transaction. Returns the post-hold balance when affordable; returns null and
+    // rolls the hold back when it would drive the balance negative, so a rejected run reserves nothing.
+    // Concurrent enqueues serialize on the row insert, so they can no longer all pass on one stale read.
+    async reserveForRun(input: { runId: string; holdCredits: number }): Promise<number | null> {
+      const rollback = Symbol('insufficient');
+      try {
+        return await db.transaction(async (tx) => {
+          await tx
+            .insert(creditLedger)
+            .values({
+              orgId,
+              kind: 'debit',
+              amount: -Math.abs(input.holdCredits),
+              idempotencyKey: holdKey(input.runId),
+              reason: 'run_hold',
+            })
+            .onConflictDoNothing({
+              target: creditLedger.idempotencyKey,
+              where: sql`${creditLedger.idempotencyKey} is not null`,
+            });
+          const [row] = await tx
+            .select({ total: sql<number>`coalesce(sum(${creditLedger.amount}), 0)::int` })
+            .from(creditLedger)
+            .where(eq(creditLedger.orgId, orgId));
+          const total = row?.total ?? 0;
+          if (total < 0) throw rollback;
+          return total;
+        });
+      } catch (e) {
+        if (e === rollback) return null;
+        throw e;
+      }
+    },
+
+    // Release a run's reservation. Called on every terminal run transition so the hold never outlives
+    // the run; the final debit (for a billed run) is written separately by debitForRun. Idempotent and
+    // a harmless no-op when no hold exists (OSS build, or a run that was never reserved).
+    async releaseHold(runId: string): Promise<void> {
+      await db
+        .delete(creditLedger)
+        .where(and(eq(creditLedger.orgId, orgId), eq(creditLedger.idempotencyKey, holdKey(runId))));
     },
 
     async list(limit = 50): Promise<CreditLedger[]> {

@@ -76,7 +76,8 @@ describe('POST /runs', () => {
       payload: body,
     });
     expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ runId: 'run_1', status: 'queued' });
+    // runId is minted by the producer (so the credit gate can reserve against it) [audit 2026-06-27 H7].
+    expect(res.json()).toMatchObject({ runId: expect.stringMatching(/^run_/), status: 'queued' });
     expect(add).toHaveBeenCalledTimes(1);
     // Provenance framing: the service-key door stamps source 'mcp'.
     expect(add.mock.calls[0]![1].source).toBe('mcp');
@@ -88,7 +89,7 @@ describe('POST /runs', () => {
     getSession.mockResolvedValueOnce({ session: { activeOrganizationId: 'org_1' }, user: { id: 'u1' } });
     const res = await app.inject({ method: 'POST', url: '/runs', payload: body });
     expect(res.statusCode).toBe(202);
-    expect(res.json()).toEqual({ runId: 'run_1', status: 'queued' });
+    expect(res.json()).toMatchObject({ runId: expect.stringMatching(/^run_/), status: 'queued' });
     expect(add.mock.calls[0]![1].source).toBe('dashboard');
     await app.close();
   });

@@ -81,3 +81,48 @@ describe('credit ledger idempotency [tech-arch §13.4]', () => {
     expect(await org.credits.balance()).toBe(2491);
   });
 });
+
+describe('credit hold reservation [audit 2026-06-27 H7]', () => {
+  it('reserves the estimate (reflected in balance) and releases it on a terminal run transition', async () => {
+    const org = dao.forOrg('org_a');
+    const app = await org.apps.create({ name: 'a', allowlist: ['https://app.com'] });
+    const run = await org.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://app.com' });
+    await org.credits.grant({ amount: 100, idempotencyKey: 'starter:org_a', reason: 'starter' });
+
+    const remaining = await org.credits.reserveForRun({ runId: run.id, holdCredits: 10 });
+    expect(remaining).toBe(90);
+    expect(await org.credits.balance()).toBe(90); // the hold is live, so concurrent gates see it
+
+    await org.runs.markCompleted(run.id, { durationMs: 5 });
+    expect(await org.credits.balance()).toBe(100); // terminal transition released the hold
+  });
+
+  it('refuses (null) and persists no hold when the reservation would overdraw', async () => {
+    const org = dao.forOrg('org_a');
+    await org.credits.grant({ amount: 5, idempotencyKey: 'starter:org_a', reason: 'starter' });
+    const remaining = await org.credits.reserveForRun({ runId: 'run_over', holdCredits: 10 });
+    expect(remaining).toBeNull();
+    expect(await org.credits.balance()).toBe(5); // rolled back, nothing reserved
+  });
+
+  it('reserves at most once per run (idempotent on runId)', async () => {
+    const org = dao.forOrg('org_a');
+    await org.credits.grant({ amount: 100, idempotencyKey: 'starter:org_a', reason: 'starter' });
+    await org.credits.reserveForRun({ runId: 'run_dup', holdCredits: 10 });
+    await org.credits.reserveForRun({ runId: 'run_dup', holdCredits: 10 });
+    expect(await org.credits.balance()).toBe(90); // one hold, not two
+  });
+});
+
+describe('run lifecycle claim guard [audit 2026-06-27 H4]', () => {
+  it('markRunning claims a queued run once but refuses to resurrect a terminal one', async () => {
+    const org = dao.forOrg('org_a');
+    const app = await org.apps.create({ name: 'a', allowlist: ['https://app.com'] });
+    const run = await org.runs.create({ appId: app.id, source: 'mcp', goal: 'g', url: 'https://app.com' });
+
+    expect(await org.runs.markRunning(run.id)).toBe(true); // queued -> claimed
+    await org.runs.markCompleted(run.id, { durationMs: 5 });
+    expect(await org.runs.markRunning(run.id)).toBe(false); // already terminal -> not re-claimed
+    expect((await org.runs.get(run.id))?.lifecycle).toBe('completed'); // never flipped back to running
+  });
+});

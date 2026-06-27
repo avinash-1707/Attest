@@ -5,11 +5,12 @@ import {
   RUN_BACKOFF_MS,
   isUrlAllowed,
   jobPayload,
+  InsufficientCreditsError,
   type AgentRole,
   type Source,
   type BillingGate,
 } from '@attest/contracts';
-import type { DataAccess, OrgScope, SecretCipher, OrgCipher } from '@attest/db';
+import { genId, type DataAccess, type OrgScope, type SecretCipher, type OrgCipher } from '@attest/db';
 import { ApiError } from '../platform/errors';
 
 // The run-enqueue producer: the one path that turns an authenticated request into a queued job
@@ -50,43 +51,50 @@ export async function enqueueRun(
     throw new ApiError(400, 'url_not_allowed', 'Target URL is not in the app allowlist');
   }
 
-  // Credit gate: a hosted org must be able to cover the run before any secret is opened or row written
-  // [tech-arch §13.4]. No-op in the OSS build. Throws InsufficientCreditsError -> mapped to 402.
-  await deps.gate.assertCanEnqueue(ctx.orgId);
-
-  // Open secrets server-side; plaintext lives only in these locals + the payload [arch §10, §6.1].
-  const cipher = deps.cipher.for(ctx.orgId);
-  const { apiKey, byok } = await resolveApiKey(org, cipher, deps.hostedApiKey);
-  const credentials = await resolveCredentials(org, cipher, input.appId);
-
   const models = deps.modelDefaults;
-  const run = await org.runs.create({
-    appId: input.appId,
-    source: input.source,
-    goal: input.goal,
-    url: input.url,
-    modelSnapshot: models,
-  });
-
-  // Validate at the boundary before enqueue [invariant 6]. A failure here is our assembly bug (500),
-  // never the client's.
-  const payload = jobPayload.parse({
-    runId: run.id,
-    orgId: ctx.orgId,
-    appId: input.appId,
-    source: input.source,
-    goal: input.goal,
-    url: input.url,
-    modelConfig: { models, apiKey },
-    credentials: Object.keys(credentials).length > 0 ? credentials : undefined,
-    byok,
-  });
-
+  // Mint the runId up front so the credit gate can reserve a hold against it BEFORE any row is written
+  // [audit 2026-06-27 H7]. A denied gate rolls its hold back and we never create a row; once reserved,
+  // any later failure compensates by releasing the hold (and canceling the row if it was created).
+  const runId = genId('run');
+  let reserved = false;
   try {
+    // Credit gate before any secret is opened [tech-arch §13.4]. No-op in the OSS build. In the hosted
+    // build it reserves the run's estimated cost so concurrent enqueues can't all pass on one stale
+    // balance; throws InsufficientCreditsError -> 402.
+    await deps.gate.assertCanEnqueue(ctx.orgId, runId);
+    reserved = true;
+
+    // Open secrets server-side; plaintext lives only in these locals + the payload [arch §10, §6.1].
+    const cipher = deps.cipher.for(ctx.orgId);
+    const { apiKey, byok } = await resolveApiKey(org, cipher, deps.hostedApiKey);
+    const credentials = await resolveCredentials(org, cipher, input.appId);
+
+    await org.runs.create({
+      id: runId,
+      appId: input.appId,
+      source: input.source,
+      goal: input.goal,
+      url: input.url,
+      modelSnapshot: models,
+    });
+
+    // Validate at the boundary before enqueue [invariant 6].
+    const payload = jobPayload.parse({
+      runId,
+      orgId: ctx.orgId,
+      appId: input.appId,
+      source: input.source,
+      goal: input.goal,
+      url: input.url,
+      modelConfig: { models, apiKey },
+      credentials: Object.keys(credentials).length > 0 ? credentials : undefined,
+      byok,
+    });
+
     // The options object is load-bearing: the worker reads job.opts.attempts to run its §7.5 retry
     // gate. Omitting attempts/backoff silently collapses environment-failure retries to none.
     await deps.queue.add(RUN_JOB, payload, {
-      jobId: run.id,
+      jobId: runId,
       attempts: MAX_RUN_ATTEMPTS,
       backoff: { type: 'exponential', delay: RUN_BACKOFF_MS },
       // The payload carries decrypted secrets [job.ts]. Drop the job once terminal so plaintext does
@@ -94,13 +102,18 @@ export async function enqueueRun(
       removeOnComplete: true,
       removeOnFail: true,
     });
-  } catch {
-    // Compensate so a Redis blip never strands a 'queued' row with no job behind it.
-    await org.runs.failPermanently(run.id, 'enqueue failed').catch(() => undefined);
+  } catch (err) {
+    // The gate threw before reserving anything (e.g. insufficient credits): no hold, no row, nothing to
+    // compensate. Surface the typed error (-> 402) directly.
+    if (!reserved) throw err;
+    // Past the gate: a hold exists (hosted) and the row may exist. failPermanently releases the hold and
+    // cancels the row if present, so a failed enqueue never strands a queued row or a dangling hold.
+    await org.runs.failPermanently(runId, 'enqueue failed').catch(() => undefined);
+    if (err instanceof ApiError || err instanceof InsufficientCreditsError) throw err;
     throw new ApiError(503, 'enqueue_unavailable', 'Failed to enqueue run; retry shortly');
   }
 
-  return { runId: run.id, status: 'queued' };
+  return { runId, status: 'queued' };
 }
 
 // BYOK key if the org has one, else the hosted default. The model id (which model) is separate from

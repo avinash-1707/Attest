@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { execute } from './index';
 import { EvidenceCollector } from '../evidence/index';
 import { FakeBrowserContext, FakeResolutionAdapter, FakeEvidenceStore } from '../testing/fakes';
@@ -6,9 +6,13 @@ import type { Journey } from '../journey';
 
 const ns = { orgId: 'org_1', appId: 'app_1' };
 
-function deps(ctx: FakeBrowserContext, resolution = new FakeResolutionAdapter()) {
+function deps(
+  ctx: FakeBrowserContext,
+  resolution = new FakeResolutionAdapter(),
+  allowlist?: readonly string[],
+) {
   const store = new FakeEvidenceStore();
-  return { ctx, resolution, evidence: new EvidenceCollector(ctx, store, ns) };
+  return { ctx, resolution, evidence: new EvidenceCollector(ctx, store, ns, 'run_test'), allowlist };
 }
 
 const loginJourney: Journey = {
@@ -81,5 +85,30 @@ describe('executor', () => {
     const last = result.steps.at(-1)!;
     expect(last.error).toContain('resolution miss');
     expect(last.conclusiveFailure).toBe(true);
+  });
+
+  // [audit 2026-06-27 H2] The planner can emit a goto to any host; the executor must re-check every
+  // navigation against the allowlist, not just the entry url, or it is an SSRF sink.
+  it('blocks a goto whose host is off the allowlist and never navigates there', async () => {
+    const ctx = new FakeBrowserContext();
+    const gotoSpy = vi.spyOn(ctx, 'goto');
+    const journey: Journey = {
+      goal: 'exfiltrate',
+      steps: [{ index: 0, name: 'Hit metadata', action: { kind: 'goto', url: 'http://169.254.169.254/' } }],
+    };
+    const result = await execute(journey, deps(ctx, new FakeResolutionAdapter(), ['app.com']));
+
+    expect(gotoSpy).not.toHaveBeenCalled();
+    expect(result.steps[0]?.conclusiveFailure).toBe(true);
+    expect(result.steps[0]?.error).toContain('not in allowlist');
+  });
+
+  it('allows a goto whose host is on the allowlist', async () => {
+    const ctx = new FakeBrowserContext();
+    ctx.navResults['https://app.com/login'] = { ok: true, httpStatus: 200, url: 'https://app.com/login' };
+    ctx.a11y = [{ role: 'button', name: 'Login' }];
+    const result = await execute(loginJourney, deps(ctx, new FakeResolutionAdapter(), ['app.com']));
+
+    expect(result.steps[0]?.error).toBeUndefined();
   });
 });

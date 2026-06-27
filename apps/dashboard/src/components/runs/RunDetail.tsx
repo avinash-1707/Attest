@@ -13,6 +13,12 @@ import type { BadgeStatus } from '@/components/ui/Badge';
 import { PageContainer } from '@/components/ui/PageContainer';
 import type { RunStatusView, Attestation, AttestationStep, Failure, EvidenceRefView } from '@attest/contracts';
 
+// Defense-in-depth against a non-http(s) run.url rendering as a clickable XSS sink. The contract now
+// rejects such URLs at enqueue, but guard the render too: only http(s) links through [audit 2026-06-27 H1].
+function safeHref(url: string): string | undefined {
+  return /^https?:\/\//i.test(url) ? url : undefined;
+}
+
 interface RunDetailProps {
   id: string;
 }
@@ -190,7 +196,7 @@ function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
             {run.goal}
           </p>
           <a
-            href={run.url}
+            href={safeHref(run.url)}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -253,7 +259,7 @@ function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
             {run.goal}
           </p>
           <a
-            href={run.url}
+            href={safeHref(run.url)}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -350,7 +356,7 @@ function VerdictHero({ run, attestation, attPending }: VerdictHeroProps) {
           {run.goal}
         </p>
         <a
-          href={run.url}
+          href={safeHref(run.url)}
           target="_blank"
           rel="noopener noreferrer"
           style={{

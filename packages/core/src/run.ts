@@ -20,6 +20,9 @@ export interface RunInput {
   source: Source;
   goal: string;
   url: string;
+  // The app's navigation allowlist. Re-checked before EVERY navigation (not just the entry url) so a
+  // planner-emitted goto cannot reach an off-allowlist/internal host [invariant 7, audit 2026-06-27 H2].
+  allowlist: readonly string[];
 }
 
 export interface RunDeps {
@@ -85,10 +88,15 @@ export async function runAttestation(input: RunInput, deps: RunDeps): Promise<Ru
   const journey = await plan({ goal: input.goal, url: input.url }, model);
 
   const ctx = await deps.browser.newContext({});
-  const evidence = new EvidenceCollector(ctx, deps.store, ns);
+  const evidence = new EvidenceCollector(ctx, deps.store, ns, input.runId);
   let execution: ExecutionResult;
   try {
-    execution = await execute(journey, { ctx, resolution: deps.resolution, evidence });
+    execution = await execute(journey, {
+      ctx,
+      resolution: deps.resolution,
+      evidence,
+      allowlist: input.allowlist,
+    });
   } finally {
     await ctx.close();
   }

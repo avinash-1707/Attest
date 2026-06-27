@@ -1,14 +1,29 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
 import type { Source, AgentRole } from '@attest/contracts';
 import type { Db } from './types';
 import { one } from './util';
-import { run, app } from '../schema';
+import { run, app, creditLedger } from '../schema';
+import { holdKey } from './credit-ledger.repo';
 
 export type Run = typeof run.$inferSelect;
 
+const TERMINAL = ['completed', 'canceled'] as const;
+
 export function runRepo(db: Db, orgId: string) {
+  // Release any credit hold a run reserved at enqueue [audit 2026-06-27 H7]. Idempotent no-op when no
+  // hold exists (OSS build, or a never-reserved run). Folded into every terminal transition below so a
+  // hold can never outlive the run that reserved it.
+  async function releaseHold(runId: string): Promise<void> {
+    await db
+      .delete(creditLedger)
+      .where(and(eq(creditLedger.orgId, orgId), eq(creditLedger.idempotencyKey, holdKey(runId))));
+  }
+
   return {
     async create(input: {
+      // Optional caller-minted id so the enqueue producer can reserve a credit hold against the runId
+      // before the row exists [audit 2026-06-27 H7]. Omitted = DB-default generated.
+      id?: string;
       appId: string;
       source: Source;
       goal: string;
@@ -24,6 +39,7 @@ export function runRepo(db: Db, orgId: string) {
         await db
           .insert(run)
           .values({
+            ...(input.id ? { id: input.id } : {}),
             orgId,
             appId: input.appId,
             source: input.source,
@@ -55,11 +71,16 @@ export function runRepo(db: Db, orgId: string) {
         .limit(options?.limit ?? 50);
     },
 
-    async markRunning(runId: string): Promise<void> {
-      await db
+    // Claim a run for execution. Guarded against terminal states so a stale/at-least-once re-delivery of
+    // an already-finished run can never resurrect it to `running` and re-execute it [audit 2026-06-27 H4].
+    // A retry (run still `queued`/`running`) re-claims fine; returns false when the run already resolved.
+    async markRunning(runId: string): Promise<boolean> {
+      const claimed = await db
         .update(run)
         .set({ lifecycle: 'running', startedAt: new Date() })
-        .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
+        .where(and(eq(run.orgId, orgId), eq(run.id, runId), notInArray(run.lifecycle, [...TERMINAL])))
+        .returning({ id: run.id });
+      return claimed.length > 0;
     },
 
     async markCompleted(runId: string, input: { durationMs: number }): Promise<void> {
@@ -67,6 +88,7 @@ export function runRepo(db: Db, orgId: string) {
         .update(run)
         .set({ lifecycle: 'completed', finishedAt: new Date(), durationMs: input.durationMs })
         .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
+      await releaseHold(runId);
     },
 
     async markCanceled(runId: string): Promise<void> {
@@ -74,6 +96,7 @@ export function runRepo(db: Db, orgId: string) {
         .update(run)
         .set({ lifecycle: 'canceled', finishedAt: new Date() })
         .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
+      await releaseHold(runId);
     },
 
     // Terminal operational rejection (allowlist denial, missing app, final-attempt worker fault) in a
@@ -83,6 +106,7 @@ export function runRepo(db: Db, orgId: string) {
         .update(run)
         .set({ lifecycle: 'canceled', finishedAt: new Date(), error: message })
         .where(and(eq(run.orgId, orgId), eq(run.id, runId)));
+      await releaseHold(runId);
     },
 
     // Bumps the environment-failure retry counter; returns the new attempt count [tech-arch §7.5].

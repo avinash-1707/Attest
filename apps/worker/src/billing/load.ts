@@ -33,9 +33,10 @@ export async function loadBillingMeter(opts: {
   if (!opts.enabled) return noopMeter;
   const ee = await importEeBilling();
   if (!ee?.createBillingMeter) {
-    // Fail closed in a hosted deploy: never silently run unmetered when billing was required.
-    if (opts.requireBilling) throw new Error('billing enabled but @attest/ee is absent');
-    return noopMeter;
+    // Billing was explicitly enabled, so ee MUST be present. Fail closed UNCONDITIONALLY rather than
+    // falling back to the no-op meter when REQUIRE_BILLING happened not to be set: enabling billing
+    // without it must never silently run unmetered [audit 2026-06-27 H8].
+    throw new Error('BILLING_ENABLED is set but @attest/ee is absent (refusing to run unmetered)');
   }
   return ee.createBillingMeter({ dal: opts.dal, pricing: ee.defaultPricing() });
 }

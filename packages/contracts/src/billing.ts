@@ -25,9 +25,11 @@ export interface BillingMeter {
 
 // Decides whether an org may enqueue a run. Throws InsufficientCreditsError to block, or returns to
 // allow. The pre-flight estimate is ee-internal (flat per-run, errs high) so the OSS caller passes no
-// pricing. The OSS no-op impl always allows.
+// pricing. The hosted impl reserves the estimate as a per-run credit hold (released on any terminal
+// transition) so concurrent enqueues cannot all pass on one stale balance [audit 2026-06-27 H7]; the
+// runId keys that hold. The OSS no-op impl always allows.
 export interface BillingGate {
-  assertCanEnqueue(orgId: string): Promise<void>;
+  assertCanEnqueue(orgId: string, runId: string): Promise<void>;
 }
 
 // Standard-Webhooks signature headers on an inbound Dodo webhook [tech-arch §13.5].

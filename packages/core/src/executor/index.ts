@@ -1,4 +1,4 @@
-import type { EvidenceRef, GuardId, ResolvedBy } from '@attest/contracts';
+import { isUrlAllowed, type EvidenceRef, type GuardId, type ResolvedBy } from '@attest/contracts';
 import type { BrowserContext } from '../adapters/browser/index';
 import type { ResolutionAdapter } from '../adapters/resolution/index';
 import type { NavigationResult, ResolvedTarget } from '../adapters/types';
@@ -31,6 +31,9 @@ export interface ExecuteDeps {
   ctx: BrowserContext;
   resolution: ResolutionAdapter;
   evidence: EvidenceCollector;
+  // The app's navigation allowlist, re-checked before each goto [invariant 7, audit 2026-06-27 H2]. When
+  // omitted (isolated executor unit tests), navigation is not gated; the worker always supplies it.
+  allowlist?: readonly string[];
   resolveRetries?: number; // re-resolve attempts on a miss; default 1 [prd §6.2A]
   haltOnFailure?: boolean; // §4.1 policy; default true
 }
@@ -67,6 +70,11 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
     try {
       switch (step.action.kind) {
         case 'goto':
+          // Re-validate every navigation target against the allowlist, not just the entry url: the
+          // planner (an LLM) can emit a goto to any host [invariant 7, audit 2026-06-27 H2].
+          if (deps.allowlist && !isUrlAllowed(step.action.url, deps.allowlist)) {
+            throw new Error('navigation target not in allowlist');
+          }
           navigation = await deps.ctx.goto(step.action.url);
           break;
         case 'click': {

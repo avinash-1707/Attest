@@ -63,9 +63,10 @@ export async function loadBillingGate(opts: {
   if (!opts.enabled) return allowAllGate;
   const ee = await importEeBilling();
   if (!ee?.createBillingGate) {
-    // Fail closed in a hosted deploy: never silently run ungated when billing was required.
-    if (opts.requireBilling) throw new Error('billing enabled but @attest/ee is absent');
-    return allowAllGate;
+    // Billing was explicitly enabled, so ee MUST be present. Fail closed UNCONDITIONALLY rather than
+    // falling back to the always-allow gate when REQUIRE_BILLING happened not to be set: enabling
+    // billing without it must never silently run ungated/unmetered [audit 2026-06-27 H8].
+    throw new Error('BILLING_ENABLED is set but @attest/ee is absent (refusing to run ungated)');
   }
   return ee.createBillingGate({ dal: opts.dal, pricing: ee.defaultPricing() });
 }

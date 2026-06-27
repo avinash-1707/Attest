@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { runStatus, runLifecycle, source, evidenceKind } from './enums';
 
+// A navigable target URL: a syntactically valid URL whose scheme is http(s). z.url() alone accepts
+// any scheme (incl. javascript:/data:/file:), which would let a stored run.url render as a clickable
+// XSS sink in the dashboard and lets the planner/agent name a non-web target. Restrict the scheme at
+// the contract so every door (dashboard, MCP, response re-validation) is covered [audit 2026-06-27 H1].
+const httpUrl = z.url().refine((u) => /^https?:\/\//i.test(u), {
+  message: 'url must use the http or https scheme',
+});
+
 // API DTOs: the HTTP request/response shapes for apps/backend [tech-arch §2.1, §2.2].
 // Distinct from the MCP tool I/O (tools.ts) and the internal queue message (job.ts).
 //
@@ -19,7 +27,7 @@ import { runStatus, runLifecycle, source, evidenceKind } from './enums';
 export const runCreate = z.object({
   appId: z.string().min(1),
   goal: z.string().min(1),
-  url: z.url(),
+  url: httpUrl,
 });
 export type RunCreate = z.infer<typeof runCreate>;
 
@@ -42,7 +50,7 @@ export const runStatusView = z.object({
   appId: z.string().min(1),
   source,
   goal: z.string().min(1),
-  url: z.url(),
+  url: httpUrl,
   lifecycle: runLifecycle,
   status: runStatus.nullable(),
   attempt: z.number().int().nonnegative(),

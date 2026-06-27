@@ -41,8 +41,8 @@ export function createS3EvidenceStore(opts: {
     });
 
   return {
-    async put(ns: TenantNamespace, blob: Buffer, kind: EvidenceKind): Promise<EvidenceRef> {
-      const ref = evidenceKey(ns, kind, nanoid());
+    async put(ns: TenantNamespace, blob: Buffer, kind: EvidenceKind, id?: string): Promise<EvidenceRef> {
+      const ref = evidenceKey(ns, kind, id ?? nanoid());
       await client.send(
         new PutObjectCommand({
           Bucket: opts.bucket,

@@ -150,14 +150,20 @@ async function applyEvent(
     case 'payment.succeeded': {
       // One-time credit pack only; a subscription's own payment is granted via the subscription events.
       if (!event.data.subscription_id) {
-        const amount = event.data.total_amount ?? 0;
-        if (amount > 0) {
+        const amount = event.data.total_amount;
+        if (typeof amount === 'number' && Number.isFinite(amount) && amount > 0) {
           await org.credits.grant({
             amount: creditsFromAmount(amount, pricing),
             idempotencyKey: webhookId,
             reason: 'pack_purchase',
             kind: 'purchase',
           });
+        } else {
+          // A paid pack with a missing/zero/non-finite amount grants nothing. Fail closed (never
+          // over-grant), but surface it: this is the signal that `total_amount`'s name/shape is wrong
+          // (or a genuinely zero payment) [audit 2026-06-27 H6]. Confirm the field against a live Dodo
+          // payload before charging real money.
+          log(`payment_succeeded_no_grant webhook_id=${webhookId} amount=${String(amount)} (no credits granted)`);
         }
       }
       break;

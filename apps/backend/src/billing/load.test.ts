@@ -17,7 +17,7 @@ describe('OSS no-op billing [tech-arch §13, arch §11]', () => {
   it('returns the allow-all gate when billing is disabled and never gates', async () => {
     const gate = await loadBillingGate({ enabled: false, requireBilling: false, dal: explodingDal });
     expect(gate).toBe(allowAllGate);
-    await expect(gate.assertCanEnqueue('org_1')).resolves.toBeUndefined();
+    await expect(gate.assertCanEnqueue('org_1', 'run_1')).resolves.toBeUndefined();
   });
 
   it('returns the 404 no-op webhook handler when billing is disabled', async () => {

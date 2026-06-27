@@ -19,8 +19,8 @@ export function createDiskEvidenceStore(opts: { root: string }): EvidenceStore {
   }
 
   return {
-    async put(ns: TenantNamespace, blob: Buffer, kind: EvidenceKind): Promise<EvidenceRef> {
-      const ref = evidenceKey(ns, kind, nanoid());
+    async put(ns: TenantNamespace, blob: Buffer, kind: EvidenceKind, id?: string): Promise<EvidenceRef> {
+      const ref = evidenceKey(ns, kind, id ?? nanoid());
       const full = pathFor(ref);
       await mkdir(dirname(full), { recursive: true });
       await writeFile(full, blob);

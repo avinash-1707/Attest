@@ -52,7 +52,8 @@ function attestation(status: RunStatus, overrides: Partial<Attestation> = {}): A
 
 function fakeRuns() {
   return {
-    markRunning: vi.fn(async () => {}),
+    // Returns true = the run was claimed (was not already terminal) [audit 2026-06-27 H4].
+    markRunning: vi.fn(async () => true),
     markCompleted: vi.fn(async () => {}),
     markCanceled: vi.fn(async (_runId: string) => {}),
     failPermanently: vi.fn(async (_runId: string, _message: string) => {}),
@@ -63,7 +64,7 @@ function fakeRuns() {
 
 function makeDal(opts: { allowlist?: string[]; appExists?: boolean } = {}) {
   const runs = fakeRuns();
-  const attestations = { save: vi.fn(async () => {}) };
+  const attestations = { save: vi.fn(async () => {}), statusByRun: vi.fn(async () => undefined) };
   const evidence = { createMany: vi.fn(async () => []) };
   const apps = {
     get: vi.fn(async () =>

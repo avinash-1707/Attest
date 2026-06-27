@@ -83,7 +83,13 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
     throw new UnrecoverableError('navigation target not in allowlist');
   }
 
-  await org.runs.markRunning(job.runId);
+  // Claim the run; guarded against terminal states so a stale re-delivery of an already-resolved run is
+  // not re-executed (which could flip a canceled run to completed) [audit 2026-06-27 H4].
+  const claimed = await org.runs.markRunning(job.runId);
+  if (!claimed) {
+    const status = await org.attestations.statusByRun(job.runId);
+    return { status: status ?? 'inconclusive' };
+  }
   // The attempt column counts environment-failure retries, not total executions: bump only on a
   // re-execution [tech-arch §7.5].
   if (ctx.attemptsMade > 0) await org.runs.incrementAttempt(job.runId);
@@ -95,6 +101,7 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
     source: job.source,
     goal: job.goal,
     url: job.url,
+    allowlist: app.allowlist,
   };
 
   let runOut: RunResult;

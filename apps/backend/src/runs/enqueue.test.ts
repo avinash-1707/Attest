@@ -31,7 +31,9 @@ function setup(opts: Opts) {
     opts.addImpl ?? (async () => undefined),
   );
   const failPermanently = vi.fn(async () => undefined);
-  const runsCreate = vi.fn(async () => ({ id: 'run_1' }));
+  // The producer now mints the runId and passes it to create (so the gate can reserve a hold against it
+  // before the row exists); echo it back [audit 2026-06-27 H7].
+  const runsCreate = vi.fn(async (i: { id?: string }) => ({ id: i.id ?? 'run_1' }));
 
   const org = {
     apps: { get: vi.fn(async () => app) },
@@ -65,10 +67,11 @@ describe('enqueueRun', () => {
 
     const result = await enqueueRun({ orgId: 'org_1' }, input, deps);
 
-    expect(result).toEqual({ runId: 'run_1', status: 'queued' });
+    expect(result.status).toBe('queued');
+    expect(result.runId).toMatch(/^run_/);
     expect(add).toHaveBeenCalledTimes(1);
-    expect(add).toHaveBeenCalledWith(RUN_JOB, expect.objectContaining({ runId: 'run_1' }), {
-      jobId: 'run_1',
+    expect(add).toHaveBeenCalledWith(RUN_JOB, expect.objectContaining({ runId: result.runId }), {
+      jobId: result.runId,
       attempts: MAX_RUN_ATTEMPTS,
       backoff: { type: 'exponential', delay: RUN_BACKOFF_MS },
       removeOnComplete: true,
@@ -89,7 +92,7 @@ describe('enqueueRun', () => {
     expect(payload.modelConfig.apiKey).toBe('opened:mk');
     expect(payload.modelConfig.models).toEqual(MODELS);
     expect(payload.credentials).toEqual({ username: 'opened:cu' });
-    expect(payload.runId).toBe('run_1');
+    expect(payload.runId).toMatch(/^run_/);
   });
 
   it('opens every credential row into a flat name -> value map', async () => {
@@ -175,7 +178,7 @@ describe('enqueueRun', () => {
     expect(runsCreate).toHaveBeenCalledTimes(1);
     expect(add).toHaveBeenCalledTimes(1);
     expect(failPermanently).toHaveBeenCalledTimes(1);
-    expect(failPermanently).toHaveBeenCalledWith('run_1', 'enqueue failed');
+    expect(failPermanently).toHaveBeenCalledWith(expect.stringMatching(/^run_/), 'enqueue failed');
   });
 
   it('still surfaces the 503 even if the compensating failPermanently throws', async () => {
