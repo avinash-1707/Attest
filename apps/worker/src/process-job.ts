@@ -130,13 +130,13 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
   if (att.status === 'inconclusive') {
     await org.runs.setError(job.runId, 'inconclusive after retry budget exhausted');
   }
-  await org.runs.markCompleted(job.runId, { durationMs: att.durationMs });
 
-  // Meter the resolved run: UsageEvent + credit debit, idempotent on runId so a re-delivery converges
-  // [tech-arch §13.2]. No-op in the OSS build. Runs last; if it throws, the job retries and the
-  // idempotent writes converge rather than double-charging. An `inconclusive` run (environment failure,
-  // target unreachable) consumed resources but gave the user no verdict, so it is NOT billed - only a
-  // passed/failed verdict charges. byok is snapshotted at enqueue (job.byok), not re-read here.
+  // Meter the resolved run BEFORE marking it completed [audit 2026-06-27 M2]. markCompleted is the
+  // terminal transition that releases the credit hold AND (via the H4 claim guard) makes a re-delivery
+  // a no-op; so if the meter ran after it and then threw, the retry would short-circuit and the debit
+  // would be lost forever. Metering first means a meter failure leaves the run non-terminal, so the
+  // retry re-meters - idempotent on runId, so it converges without double-charging. An `inconclusive`
+  // run gave no verdict, so it is NOT billed. byok is snapshotted at enqueue (job.byok).
   if (att.status !== 'inconclusive') {
     await ctx.meter.recordAndDebit({
       orgId: job.orgId,
@@ -148,6 +148,8 @@ export async function processRunJob(raw: unknown, ctx: JobContext): Promise<JobR
       byok: job.byok,
     });
   }
+
+  await org.runs.markCompleted(job.runId, { durationMs: att.durationMs });
 
   return { status: att.status };
 }

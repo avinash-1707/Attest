@@ -26,7 +26,10 @@ const stepSchema = z.object({
     .optional(),
 });
 
-const planSchema = z.object({ steps: z.array(stepSchema).min(1) });
+// Cap the journey length: a runaway/adversarial planner response must not drive thousands of browser
+// actions and exhaust the worker [audit 2026-06-27 M8]. 40 steps comfortably covers real flows.
+const MAX_STEPS = 40;
+const planSchema = z.object({ steps: z.array(stepSchema).min(1).max(MAX_STEPS) });
 
 const SYSTEM = [
   'You are a QA planner. Given a goal and a starting URL, produce an ordered journey of UI',
@@ -40,6 +43,8 @@ export async function plan(input: { goal: string; url: string }, model: ModelCli
   const res = await model.complete('planner', {
     system: SYSTEM,
     prompt: `Goal: ${input.goal}\nStart URL: ${input.url}`,
+    // Bound the completion so an oversized response can't be buffered/parsed unbounded [audit M8].
+    maxTokens: 4096,
   });
 
   let raw: unknown;

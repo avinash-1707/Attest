@@ -2,6 +2,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from './types';
 import { one } from './util';
 import { appKey, appKeyApp, app } from '../schema';
+import { AppScopeError } from './errors';
 
 export type AppKey = typeof appKey.$inferSelect;
 
@@ -23,7 +24,7 @@ export function appKeyRepo(db: Db, orgId: string) {
           .from(app)
           .where(and(eq(app.orgId, orgId), inArray(app.id, input.appIds)));
         if (owned.length !== new Set(input.appIds).size) {
-          throw new Error('app scope contains an app outside this org');
+          throw new AppScopeError('app scope contains an app outside this org');
         }
         const key = one(
           await tx
@@ -80,11 +81,15 @@ export function appKeyRepo(db: Db, orgId: string) {
       return rows.map((r) => r.appId);
     },
 
-    async revoke(appKeyId: string): Promise<void> {
-      await db
+    // Returns false when no such key exists in this org, so the route can 404 rather than a silent 204
+    // [audit 2026-06-27 M11].
+    async revoke(appKeyId: string): Promise<boolean> {
+      const rows = await db
         .update(appKey)
         .set({ revokedAt: new Date() })
-        .where(and(eq(appKey.orgId, orgId), eq(appKey.id, appKeyId)));
+        .where(and(eq(appKey.orgId, orgId), eq(appKey.id, appKeyId)))
+        .returning({ id: appKey.id });
+      return rows.length > 0;
     },
 
     async touchLastUsed(appKeyId: string): Promise<void> {

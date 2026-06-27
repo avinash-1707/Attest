@@ -42,8 +42,11 @@ async function main(): Promise<void> {
   );
 
   worker.on('failed', (job, err) => {
-    // Operational signal only; never the job data (it carries decrypted secrets) [invariant 4].
-    console.error(`run job failed runId=${job?.id ?? 'unknown'}: ${err.name}: ${err.message}`);
+    // Operational signal only: runId + error NAME, never the message or job data. The handler can't
+    // access the job's secrets to redact, and an adapter (e.g. the OpenAI SDK) can echo a key into
+    // err.message, so logging it here risks leaking a secret [invariant 4, audit 2026-06-27 M9]. The
+    // redacted, client-facing message is persisted to run.error by process-job.
+    console.error(`run job failed runId=${job?.id ?? 'unknown'}: ${err.name}`);
   });
 
   const shutdown = async (signal: string): Promise<void> => {

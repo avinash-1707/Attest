@@ -11,7 +11,7 @@ import {
   appCredentialCreate,
   appCredentialView,
 } from '@attest/contracts';
-import type { App, AppKey, ModelKey, AppCredential } from '@attest/db';
+import { AppScopeError, type App, type AppKey, type ModelKey, type AppCredential } from '@attest/db';
 import type { BackendDeps } from '../platform/deps';
 import { resolveContext, hashServiceKey, generateServiceKey, type RequestContext } from '../auth/context';
 import { ApiError } from '../platform/errors';
@@ -32,13 +32,29 @@ async function sessionCtx(req: FastifyRequest, deps: BackendDeps): Promise<Reque
   return ctx;
 }
 
-// The DAL throws a plain Error when a request references an app outside the org; surface it as a 400
-// rather than an opaque 500 (it is a client-supplied bad appId, not a backend fault).
+// The DAL throws a typed AppScopeError when a request references an app outside the org; surface it as
+// a 400 rather than an opaque 500 (a client-supplied bad appId, not a backend fault). Matching on the
+// error TYPE, not its message text, so a reworded message can't silently turn this into a 500 nor
+// mis-catch an unrelated error [audit 2026-06-27 M10].
 function mapAppScopeError(err: unknown): never {
-  if (err instanceof Error && /(outside this org|not found in org)/.test(err.message)) {
+  if (err instanceof AppScopeError) {
     throw new ApiError(400, 'invalid_app', 'A referenced app is not in your org');
   }
   throw err;
+}
+
+// Postgres unique-violation (SQLSTATE 23505). Checked on the drizzle error and its cause so a duplicate
+// credential name maps to a clear 409 instead of an opaque 500 [audit 2026-06-27 M12].
+function isUniqueViolation(err: unknown): boolean {
+  const code = (e: unknown): unknown => (e && typeof e === 'object' ? (e as { code?: unknown }).code : undefined);
+  return code(err) === '23505' || code((err as { cause?: unknown })?.cause) === '23505';
+}
+
+function mapCredentialError(err: unknown): never {
+  if (isUniqueViolation(err)) {
+    throw new ApiError(409, 'credential_exists', 'A credential with that name already exists for this app');
+  }
+  return mapAppScopeError(err);
 }
 
 function toAppView(a: App) {
@@ -109,7 +125,8 @@ export function registerManagementRoutes(app: FastifyInstance, deps: BackendDeps
 
   app.delete<{ Params: { id: string } }>('/apps/:id', async (req, reply) => {
     const ctx = await sessionCtx(req, deps);
-    await deps.dal.forOrg(ctx.orgId).apps.archive(req.params.id);
+    const archived = await deps.dal.forOrg(ctx.orgId).apps.archive(req.params.id);
+    if (!archived) throw new ApiError(404, 'app_not_found', 'App not found');
     reply.status(204).send();
   });
 
@@ -152,7 +169,8 @@ export function registerManagementRoutes(app: FastifyInstance, deps: BackendDeps
 
   app.delete<{ Params: { id: string } }>('/keys/:id', async (req, reply) => {
     const ctx = await sessionCtx(req, deps);
-    await deps.dal.forOrg(ctx.orgId).appKeys.revoke(req.params.id);
+    const revoked = await deps.dal.forOrg(ctx.orgId).appKeys.revoke(req.params.id);
+    if (!revoked) throw new ApiError(404, 'key_not_found', 'Service key not found');
     reply.status(204).send();
   });
 
@@ -178,7 +196,8 @@ export function registerManagementRoutes(app: FastifyInstance, deps: BackendDeps
 
   app.delete<{ Params: { id: string } }>('/model-keys/:id', async (req, reply) => {
     const ctx = await sessionCtx(req, deps);
-    await deps.dal.forOrg(ctx.orgId).modelKeys.delete(req.params.id);
+    const deleted = await deps.dal.forOrg(ctx.orgId).modelKeys.delete(req.params.id);
+    if (!deleted) throw new ApiError(404, 'model_key_not_found', 'Model key not found');
     reply.status(204).send();
   });
 
@@ -190,7 +209,7 @@ export function registerManagementRoutes(app: FastifyInstance, deps: BackendDeps
     const row = await deps.dal
       .forOrg(ctx.orgId)
       .appCredentials.create({ appId: body.appId, name: body.name, ciphertext })
-      .catch(mapAppScopeError);
+      .catch(mapCredentialError);
     reply.status(201).send(toCredentialView(row));
   });
 
@@ -203,7 +222,8 @@ export function registerManagementRoutes(app: FastifyInstance, deps: BackendDeps
 
   app.delete<{ Params: { id: string } }>('/credentials/:id', async (req, reply) => {
     const ctx = await sessionCtx(req, deps);
-    await deps.dal.forOrg(ctx.orgId).appCredentials.delete(req.params.id);
+    const deleted = await deps.dal.forOrg(ctx.orgId).appCredentials.delete(req.params.id);
+    if (!deleted) throw new ApiError(404, 'credential_not_found', 'Credential not found');
     reply.status(204).send();
   });
 }

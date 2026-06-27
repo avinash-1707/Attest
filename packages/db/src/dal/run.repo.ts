@@ -4,6 +4,7 @@ import type { Db } from './types';
 import { one } from './util';
 import { run, app, creditLedger } from '../schema';
 import { holdKey } from './credit-ledger.repo';
+import { AppScopeError } from './errors';
 
 export type Run = typeof run.$inferSelect;
 
@@ -34,7 +35,7 @@ export function runRepo(db: Db, orgId: string) {
         .select({ id: app.id })
         .from(app)
         .where(and(eq(app.orgId, orgId), eq(app.id, input.appId)));
-      if (!owned) throw new Error('app not found in org');
+      if (!owned) throw new AppScopeError('app not found in org');
       return one(
         await db
           .insert(run)

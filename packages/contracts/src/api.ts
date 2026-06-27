@@ -228,6 +228,8 @@ export const checkoutCreate = z.object({
 });
 export type CheckoutCreate = z.infer<typeof checkoutCreate>;
 
-// Response for checkout + portal: a hosted URL the client redirects to.
-export const checkoutSession = z.object({ url: z.string().min(1) });
+// Response for checkout + portal: a hosted URL the client redirects to. Validated as a real URL (the
+// client does window.location = url), not a bare string, so a backend/upstream change can't turn it
+// into an open-redirect or a non-navigable value [audit 2026-06-27 M6].
+export const checkoutSession = z.object({ url: z.url() });
 export type CheckoutSession = z.infer<typeof checkoutSession>;

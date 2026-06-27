@@ -94,12 +94,23 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
       error = e instanceof Error ? e.message : String(e);
     }
 
-    const screenshotRef = await deps.evidence.captureScreenshot();
+    // Evidence/a11y capture can itself throw if the browser context crashed mid-step (target/session
+    // closed). Tolerate it: record the step error and carry on rather than letting the throw escape
+    // execute() and become a hard worker fault [audit 2026-06-27 M13]. A failed capture is a conclusive
+    // step failure (env-failure detection upstream maps a crashed target to inconclusive).
+    let screenshotRef: EvidenceRef | undefined;
+    let a11y: GuardEvidence['a11y'] = [];
+    try {
+      screenshotRef = await deps.evidence.captureScreenshot();
+      a11y = await deps.ctx.a11ySnapshot();
+    } catch (e) {
+      error ??= e instanceof Error ? e.message : String(e);
+    }
     const guardEvidence: GuardEvidence = {
       navigation,
       console: deps.evidence.consoleEvents().slice(consoleBefore),
       network: deps.evidence.networkEvents().slice(networkBefore),
-      a11y: await deps.ctx.a11ySnapshot(),
+      a11y,
       expectation: step.expectation,
     };
     const guards = runGuards(guardEvidence);
@@ -111,10 +122,17 @@ export async function execute(journey: Journey, deps: ExecuteDeps): Promise<Exec
       guardEvidence,
       firedGuardIds: firedGuards(guards),
       conclusiveFailure,
-      screenshotRef,
+      ...(screenshotRef ? { screenshotRef } : {}),
     };
     if (resolvedBy !== undefined) executed.resolvedBy = resolvedBy;
-    if (conclusiveFailure) executed.domSnapshotRef = await deps.evidence.captureDomSnapshot();
+    if (conclusiveFailure) {
+      // Best-effort: a crashed context can also fail the DOM snapshot; don't let it escape.
+      try {
+        executed.domSnapshotRef = await deps.evidence.captureDomSnapshot();
+      } catch {
+        /* snapshot unavailable (context gone); the step failure still stands */
+      }
+    }
     if (error !== undefined) executed.error = error;
     steps.push(executed);
 

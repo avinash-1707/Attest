@@ -325,7 +325,9 @@ describe('default-workspace resolution [arch §6.1, invariant 3]', () => {
   });
 
   it('round-trips and overwrites the durable last-active pointer', async () => {
-    const { dal } = await freshWithUser();
+    const { db, dal } = await freshWithUser();
+    await addMember(db, 'org_a', '2024-01-01');
+    await addMember(db, 'org_b', '2025-06-01');
     expect(await dal.getUserLastActiveOrg('user_1')).toBeNull();
     await dal.setUserLastActiveOrg('user_1', 'org_b');
     expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_b');
@@ -334,10 +336,19 @@ describe('default-workspace resolution [arch §6.1, invariant 3]', () => {
   });
 
   it('no-ops the durable write when the value is unchanged (rolling-refresh path)', async () => {
-    const { dal } = await freshWithUser();
+    const { db, dal } = await freshWithUser();
+    await addMember(db, 'org_a', '2024-01-01');
     await dal.setUserLastActiveOrg('user_1', 'org_a');
     // Re-persisting the same value must not throw and must leave the pointer intact.
     await dal.setUserLastActiveOrg('user_1', 'org_a');
+    expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_a');
+  });
+
+  it('refuses to persist a pointer to an org the user is not a member of [audit 2026-06-27 M4]', async () => {
+    const { db, dal } = await freshWithUser();
+    await addMember(db, 'org_a', '2024-01-01');
+    await dal.setUserLastActiveOrg('user_1', 'org_a'); // member -> persisted
+    await dal.setUserLastActiveOrg('user_1', 'org_b'); // NOT a member -> guarded no-op
     expect(await dal.getUserLastActiveOrg('user_1')).toBe('org_a');
   });
 });

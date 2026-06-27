@@ -110,6 +110,10 @@ export async function setUserLastActiveOrg(
       and(
         eq(user.id, userId),
         sql`${user.lastActiveOrganizationId} is distinct from ${organizationId}`,
+        // Membership guard: never persist a pointer to an org the user is not a member of, even if a
+        // caller regresses. The durable pointer can only ever name an org the user belongs to
+        // [invariant 3, audit 2026-06-27 M4].
+        sql`exists (select 1 from ${member} where ${member.userId} = ${user.id} and ${member.organizationId} = ${organizationId})`,
       ),
     );
 }

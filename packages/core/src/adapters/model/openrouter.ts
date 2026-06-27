@@ -54,7 +54,11 @@ export function createOpenRouterModelClient(
       }
       messages.push({ role: 'user', content: req.prompt });
 
-      const completion = await client.chat.completions.create({ model, messages });
+      const completion = await client.chat.completions.create({
+        model,
+        messages,
+        ...(req.maxTokens ? { max_tokens: req.maxTokens } : {}),
+      });
       const text = completion.choices[0]?.message?.content ?? '';
       const cost = completion.usage?.cost;
       return typeof cost === 'number' ? { text, costUsd: cost } : { text };

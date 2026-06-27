@@ -52,6 +52,7 @@ function makeDeps(): BackendDeps {
     dal: {
       forOrg: () => ({ appKeys: { touchLastUsed: vi.fn(async () => undefined) } }),
       resolveServiceKey: vi.fn(async () => ({ key: { id: 'k1', orgId: 'org_1' }, appIds: ['app_1'] })),
+      getUserOrgMemberships: vi.fn(async () => [{ organizationId: 'org_1', createdAt: new Date() }]),
     },
     cipher: { for: () => ({ seal: async (s: string) => s, open: async (s: string) => s }) },
     queue: {},

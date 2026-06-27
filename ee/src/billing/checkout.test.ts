@@ -58,7 +58,11 @@ describe('billing checkout [tech-arch §13.6]', () => {
       customerEmail: 'a@b.com',
       customerName: 'A',
     });
-    expect(client.customers.create).toHaveBeenCalledWith({ email: 'a@b.com', name: 'A' });
+    // The create is idempotency-keyed on the orgId so a retry reuses the customer [audit 2026-06-27 M7].
+    expect(client.customers.create).toHaveBeenCalledWith(
+      { email: 'a@b.com', name: 'A' },
+      { idempotencyKey: expect.stringMatching(/^dodo_customer:/) },
+    );
     expect(upsert).toHaveBeenCalledWith({ dodoCustomerId: 'cus_new' });
     expect(client.checkoutSessions.create).toHaveBeenCalledWith(
       expect.objectContaining({

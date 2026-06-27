@@ -6,6 +6,9 @@ import type { AgentRole } from '@attest/contracts';
 export interface ModelRequest {
   prompt: string;
   system?: string;
+  // Upper bound on the completion length, so an oversized/runaway response can't be buffered and parsed
+  // unbounded under concurrency [audit 2026-06-27 M8]. Adapters that ignore it stay correct.
+  maxTokens?: number;
 }
 
 export interface ModelResponse {

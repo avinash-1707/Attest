@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "app_credential_org_app_name_uq" ON "app_credential" USING btree ("org_id","app_id","name");

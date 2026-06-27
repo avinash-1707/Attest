@@ -2,6 +2,7 @@ import { and, desc, eq } from 'drizzle-orm';
 import type { Db } from './types';
 import { one } from './util';
 import { appCredential, app } from '../schema';
+import { AppScopeError } from './errors';
 
 export type AppCredential = typeof appCredential.$inferSelect;
 
@@ -20,7 +21,7 @@ export function appCredentialRepo(db: Db, orgId: string) {
           .select({ id: app.id })
           .from(app)
           .where(and(eq(app.orgId, orgId), eq(app.id, input.appId)));
-        if (!owned) throw new Error('app not found in org');
+        if (!owned) throw new AppScopeError('app not found in org');
         return one(
           await tx
             .insert(appCredential)
@@ -45,8 +46,13 @@ export function appCredentialRepo(db: Db, orgId: string) {
       return row;
     },
 
-    async delete(id: string): Promise<void> {
-      await db.delete(appCredential).where(and(eq(appCredential.orgId, orgId), eq(appCredential.id, id)));
+    // Returns false when no such credential exists in this org, so the route can 404 [audit 2026-06-27 M11].
+    async delete(id: string): Promise<boolean> {
+      const rows = await db
+        .delete(appCredential)
+        .where(and(eq(appCredential.orgId, orgId), eq(appCredential.id, id)))
+        .returning({ id: appCredential.id });
+      return rows.length > 0;
     },
   };
 }

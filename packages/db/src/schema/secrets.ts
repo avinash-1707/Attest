@@ -1,4 +1,4 @@
-import { pgTable, text, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { idColumn, orgIdColumn, timestamps } from './columns';
 import { organization } from './auth';
 import { app } from './app';
@@ -48,5 +48,8 @@ export const appCredential = pgTable(
   (t) => [
     index('app_credential_org_idx').on(t.orgId),
     index('app_credential_app_idx').on(t.appId),
+    // One credential per (org, app, name): a duplicate name would otherwise create a second sealed row
+    // and make resolution at enqueue ambiguous [audit 2026-06-27 M12].
+    uniqueIndex('app_credential_org_app_name_uq').on(t.orgId, t.appId, t.name),
   ],
 );

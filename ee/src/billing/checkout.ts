@@ -24,7 +24,10 @@ interface DodoApi {
     }): Promise<{ checkout_url: string | null }>;
   };
   customers: {
-    create(body: { email: string; name: string }): Promise<{ customer_id: string }>;
+    create(
+      body: { email: string; name: string },
+      options?: { idempotencyKey?: string },
+    ): Promise<{ customer_id: string }>;
     customerPortal: {
       create(customerId: string, params?: { return_url?: string }): Promise<{ link: string }>;
     };
@@ -68,10 +71,16 @@ export function createBillingCheckout(deps: CheckoutDeps): BillingCheckout {
     if (!seed?.email) {
       throw new CheckoutUnavailableError('No billing email available to create a customer');
     }
-    const customer = await client.customers.create({
-      email: seed.email,
-      name: seed.name && seed.name.length > 0 ? seed.name : seed.email,
-    });
+    // Idempotency-key the create on the orgId so a retry after a failed org_billing upsert reuses the
+    // same Dodo customer instead of orphaning a second one (whose webhooks would resolve to no org)
+    // [audit 2026-06-27 M7].
+    const customer = await client.customers.create(
+      {
+        email: seed.email,
+        name: seed.name && seed.name.length > 0 ? seed.name : seed.email,
+      },
+      { idempotencyKey: `dodo_customer:${orgId}` },
+    );
     await billing.upsert({ dodoCustomerId: customer.customer_id });
     return customer.customer_id;
   }

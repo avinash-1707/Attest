@@ -39,3 +39,4 @@ export type { ModelKey } from './model-key.repo';
 export type { AppCredential } from './app-credential.repo';
 export type { CreditLedger } from './credit-ledger.repo';
 export type { OrgBilling } from './org-billing.repo';
+export { AppScopeError } from './errors';

@@ -87,7 +87,7 @@ function summarize(journey: Journey, execution: ExecutionResult): string {
 }
 
 async function askJudge(model: ModelClient, summary: string): Promise<JudgeJson> {
-  const res = await model.complete('judge', { system: JUDGE_SYSTEM, prompt: summary });
+  const res = await model.complete('judge', { system: JUDGE_SYSTEM, prompt: summary, maxTokens: 2048 });
   let raw: unknown;
   try {
     raw = JSON.parse(res.text);

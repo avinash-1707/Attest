@@ -68,17 +68,29 @@ export async function resolveContext(
   // Route on a well-formed Bearer token, not raw header presence: a session request carrying a stray
   // non-Bearer Authorization header (proxy/extension) must still fall through to the session path.
   if (bearerToken(req)) return resolveServiceKeyContext(req, deps.dal);
-  return resolveSessionContext(req, deps.auth);
+  return resolveSessionContext(req, deps.auth, deps.dal);
 }
 
 // Dashboard path. Resolve the Better Auth session and its active org. A valid session with no active
 // org is a 403 (the user must select one); no session is a 401.
-export async function resolveSessionContext(req: FastifyRequest, auth: Auth): Promise<RequestContext> {
+export async function resolveSessionContext(
+  req: FastifyRequest,
+  auth: Auth,
+  dal: DataAccess,
+): Promise<RequestContext> {
   const result = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!result?.session) throw new ApiError(401, 'unauthorized', 'No active session');
 
   const orgId = result.session.activeOrganizationId;
   if (!orgId) throw new ApiError(403, 'no_active_org', 'No active organization selected');
+
+  // Re-validate live membership: a session cookie carries an activeOrganizationId stamped at login, but
+  // a user removed from that org mid-session would otherwise keep acting in it until the session expires
+  // [invariant 3, audit 2026-06-27 M1]. The active org must be one the user is still a member of.
+  const memberships = await dal.getUserOrgMemberships(result.user.id);
+  if (!memberships.some((m) => m.organizationId === orgId)) {
+    throw new ApiError(403, 'no_active_org', 'No active organization selected');
+  }
 
   return {
     orgId,

@@ -46,8 +46,13 @@ export function modelKeyRepo(db: Db, orgId: string) {
       return row;
     },
 
-    async delete(id: string): Promise<void> {
-      await db.delete(modelKey).where(and(eq(modelKey.orgId, orgId), eq(modelKey.id, id)));
+    // Returns false when no such key exists in this org, so the route can 404 [audit 2026-06-27 M11].
+    async delete(id: string): Promise<boolean> {
+      const rows = await db
+        .delete(modelKey)
+        .where(and(eq(modelKey.orgId, orgId), eq(modelKey.id, id)))
+        .returning({ id: modelKey.id });
+      return rows.length > 0;
     },
   };
 }

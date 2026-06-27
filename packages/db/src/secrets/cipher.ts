@@ -46,10 +46,14 @@ export function createSecretCipher(opts: { db: Db; keyProvider: KeyProvider }) {
     for(orgId: string): OrgCipher {
       return {
         async seal(plaintext: string): Promise<string> {
-          return gcmEncrypt(await dekFor(orgId), plaintext);
+          // Bind the ciphertext to this org via GCM AAD, so it can never be opened under another org's
+          // DEK even if a row were mis-routed [invariant 3, audit 2026-06-27 M3]. New seals are v2.
+          return gcmEncrypt(await dekFor(orgId), plaintext, orgId);
         },
         async open(sealed: string): Promise<string> {
-          return gcmDecrypt(await dekFor(orgId), sealed).toString('utf8');
+          // v2 blobs verify the orgId AAD; legacy v1 blobs (sealed before AAD binding) decrypt with no
+          // AAD - gcmDecrypt branches on the version tag, so both round-trip without re-encryption.
+          return gcmDecrypt(await dekFor(orgId), sealed, orgId).toString('utf8');
         },
       };
     },

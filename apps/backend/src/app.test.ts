@@ -47,7 +47,12 @@ function makeDeps(
       trustedOrigins: ['https://dash.test'],
       billingEnabled: opts.billingEnabled ?? false,
     },
-    dal: { forOrg, resolveServiceKey },
+    dal: {
+      forOrg,
+      resolveServiceKey,
+      // Session routes now re-validate live membership [audit 2026-06-27 M1].
+      getUserOrgMemberships: vi.fn(async () => [{ organizationId: 'org_1', createdAt: new Date() }]),
+    },
     cipher: { for: () => ({ seal: async (s: string) => s, open: async (s: string) => s }) },
     queue: { add },
     redis: {},

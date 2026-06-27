@@ -49,18 +49,19 @@ function makeDeps(): BackendDeps {
       })),
       list: vi.fn(async () => []),
       update: vi.fn(async () => undefined),
-      archive: vi.fn(async () => undefined),
+      // Repos now report whether anything matched so the route can 404 [audit 2026-06-27 M11].
+      archive: vi.fn(async () => true),
     },
     appKeys: {
       create: appKeyCreate,
       listWithScopes: vi.fn(async () => [
         { id: 'ak_1', name: 'ci', keyPrefix: 'ak_live_aaaa', appIds: ['app_1'], lastUsedAt: null, revokedAt: null, expiresAt: null, createdAt: TS, orgId: 'org_1', keyHash: 'SHOULDNOTLEAK' },
       ]),
-      revoke: vi.fn(async () => undefined),
+      revoke: vi.fn(async () => true),
       touchLastUsed: vi.fn(async () => undefined),
     },
-    modelKeys: { create: modelKeyCreate, list: vi.fn(async () => []), delete: vi.fn(async () => undefined) },
-    appCredentials: { create: credentialCreate, list: vi.fn(async () => []), delete: vi.fn(async () => undefined) },
+    modelKeys: { create: modelKeyCreate, list: vi.fn(async () => []), delete: vi.fn(async () => true) },
+    appCredentials: { create: credentialCreate, list: vi.fn(async () => []), delete: vi.fn(async () => true) },
   };
 
   return {
@@ -68,6 +69,7 @@ function makeDeps(): BackendDeps {
     dal: {
       forOrg: () => org,
       resolveServiceKey: vi.fn(async () => ({ key: { id: 'k1', orgId: 'org_1' }, appIds: ['app_1'] })),
+      getUserOrgMemberships: vi.fn(async () => [{ organizationId: 'org_1', createdAt: new Date() }]),
     },
     cipher: { for: () => ({ seal, open: async (s: string) => s }) },
     queue: {},
