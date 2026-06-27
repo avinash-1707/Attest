@@ -3,12 +3,15 @@ import { runCreate, type Source } from '@attest/contracts';
 import type { BackendDeps } from '../platform/deps';
 import { resolveContext } from '../auth/context';
 import { enqueueRun } from './enqueue';
+import { enqueueRouteRateLimit } from '../platform/rate-limit';
 import { ApiError } from '../platform/errors';
 
 // POST /runs: the single run-create path, exercised by both auth doors [arch §4.1, invariant 1].
 // Authenticate -> resolve org + app scope -> validate body -> scope-check -> enqueue.
 export function registerRunRoutes(app: FastifyInstance, deps: BackendDeps): void {
-  app.post('/runs', async (req, reply) => {
+  // Moderate per-route cap so a flood of enqueues can't saturate the queue/worker fleet [security].
+  const rl = enqueueRouteRateLimit(deps);
+  app.post('/runs', rl ? { config: { rateLimit: rl } } : {}, async (req, reply) => {
     const ctx = await resolveContext(req, { dal: deps.dal, auth: deps.auth });
     const body = runCreate.parse(req.body);
 

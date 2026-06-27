@@ -52,6 +52,21 @@ const base = z.object({
   dodoEnvironment: z.enum(['test_mode', 'live_mode']).default('test_mode'),
   // The dashboard URL Dodo redirects back to after checkout / from the customer portal [tech-arch §13.6].
   dashboardUrl: z.string().min(1).optional(),
+  // Perimeter HTTP rate limiting [security]. OFF in the OSS/self-host build (self-hosters own their
+  // perimeter, mirroring billingEnabled); the hosted deploy opts in via RATE_LIMIT_ENABLED=true.
+  // trustProxyHops is the load-bearing number: it MUST equal the real proxy-chain length (1 = single
+  // LB, 2 = CDN+LB). Too low keys every request on the proxy IP (one global throttle that locks out
+  // all users); too high trusts an attacker-controlled X-Forwarded-For entry (the limiter is bypassed
+  // by spoofing). Defaults to 0 (no proxy) so a self-host boot is never silently mis-keyed.
+  rateLimit: z
+    .object({
+      enabled: z.boolean().default(false),
+      trustProxyHops: z.number().int().min(0).default(0),
+      globalMax: z.number().int().positive().default(100),
+      authMax: z.number().int().positive().default(8),
+      enqueueMax: z.number().int().positive().default(30),
+    })
+    .default({ enabled: false, trustProxyHops: 0, globalMax: 100, authMax: 8, enqueueMax: 30 }),
 });
 
 // Evidence backend, selected once at start [tech-arch §8], same shape the worker uses so the read
@@ -110,6 +125,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     dodoApiKey: v('DODO_PAYMENTS_API_KEY'),
     dodoEnvironment: v('DODO_ENVIRONMENT'),
     dashboardUrl: v('DASHBOARD_URL'),
+    rateLimit: {
+      enabled: env.RATE_LIMIT_ENABLED === 'true',
+      trustProxyHops: v('RATE_LIMIT_TRUST_PROXY_HOPS') ? Number(v('RATE_LIMIT_TRUST_PROXY_HOPS')) : undefined,
+      globalMax: v('RATE_LIMIT_GLOBAL_MAX') ? Number(v('RATE_LIMIT_GLOBAL_MAX')) : undefined,
+      authMax: v('RATE_LIMIT_AUTH_MAX') ? Number(v('RATE_LIMIT_AUTH_MAX')) : undefined,
+      enqueueMax: v('RATE_LIMIT_ENQUEUE_MAX') ? Number(v('RATE_LIMIT_ENQUEUE_MAX')) : undefined,
+    },
   };
 
   if ((v('EVIDENCE_BACKEND') ?? 'disk') === 's3') {

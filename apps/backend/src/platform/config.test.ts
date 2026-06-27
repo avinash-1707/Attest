@@ -73,4 +73,45 @@ describe('loadConfig', () => {
     const cfg = loadConfig({ ...full, GOOGLE_CLIENT_ID: 'gid' } as NodeJS.ProcessEnv);
     expect(cfg.google).toBeUndefined();
   });
+
+  it('defaults rate limiting OFF with the documented 100/8/30 limits and no trusted proxy', () => {
+    const cfg = loadConfig(full as NodeJS.ProcessEnv);
+    expect(cfg.rateLimit).toEqual({
+      enabled: false,
+      trustProxyHops: 0,
+      globalMax: 100,
+      authMax: 8,
+      enqueueMax: 30,
+    });
+  });
+
+  it('parses the RATE_LIMIT_* env block as typed numbers when set', () => {
+    const cfg = loadConfig({
+      ...full,
+      RATE_LIMIT_ENABLED: 'true',
+      RATE_LIMIT_TRUST_PROXY_HOPS: '2',
+      RATE_LIMIT_GLOBAL_MAX: '50',
+      RATE_LIMIT_AUTH_MAX: '5',
+      RATE_LIMIT_ENQUEUE_MAX: '10',
+    } as NodeJS.ProcessEnv);
+    expect(cfg.rateLimit).toEqual({
+      enabled: true,
+      trustProxyHops: 2,
+      globalMax: 50,
+      authMax: 5,
+      enqueueMax: 10,
+    });
+  });
+
+  it('treats any RATE_LIMIT_ENABLED value other than the literal "true" as disabled (ops typo fails safe)', () => {
+    for (const val of ['1', 'TRUE', 'yes', '']) {
+      const cfg = loadConfig({ ...full, RATE_LIMIT_ENABLED: val } as NodeJS.ProcessEnv);
+      expect(cfg.rateLimit.enabled).toBe(false);
+    }
+  });
+
+  it('fails closed on a malformed RATE_LIMIT_TRUST_PROXY_HOPS rather than silently mis-keying', () => {
+    expect(() => loadConfig({ ...full, RATE_LIMIT_TRUST_PROXY_HOPS: '-1' } as NodeJS.ProcessEnv)).toThrow();
+    expect(() => loadConfig({ ...full, RATE_LIMIT_TRUST_PROXY_HOPS: 'abc' } as NodeJS.ProcessEnv)).toThrow();
+  });
 });
