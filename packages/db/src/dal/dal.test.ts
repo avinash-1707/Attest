@@ -64,7 +64,7 @@ describe('tenant isolation [arch §5.2, invariant 3]', () => {
     expect(await b.apps.list()).toHaveLength(0);
     expect(await b.apps.get(app.id)).toBeUndefined();
     expect(await b.runs.get(run.id)).toBeUndefined();
-    expect(await b.runs.list()).toHaveLength(0);
+    expect((await b.runs.list()).rows).toHaveLength(0);
     expect(await b.attestations.getByRun(run.id)).toBeUndefined();
     expect(await b.evidence.get(ev.id)).toBeUndefined();
     expect(await b.evidence.getByStorageKey('org_a/app/ev1.png')).toBeUndefined();
@@ -280,6 +280,209 @@ describe('billing webhook fulfillment [tech-arch §13.5]', () => {
   it('dedupes a webhook delivery on webhook-id (fresh once, then not)', async () => {
     expect((await dao.recordWebhookEvent({ webhookId: 'wh_1', eventType: 'subscription.active', status: 'processed' })).fresh).toBe(true);
     expect((await dao.recordWebhookEvent({ webhookId: 'wh_1', eventType: 'subscription.active', status: 'processed' })).fresh).toBe(false);
+  });
+});
+
+describe('run list keyset pagination', () => {
+  // Own db handle so runs can be seeded with controlled created_at + id (the repo's create() always
+  // stamps now()), which the boundary-tie and stable-walk cases require.
+  async function freshWithDb() {
+    const db = drizzle(new PGlite(), { schema });
+    await migrate(db, { migrationsFolder: 'migrations' });
+    await db.insert(schema.organization).values([
+      { id: 'org_a', name: 'A', slug: 'a', createdAt: new Date() },
+      { id: 'org_b', name: 'B', slug: 'b', createdAt: new Date() },
+    ]);
+    const dal = createDataAccess(db as unknown as Parameters<typeof createDataAccess>[0]);
+    return { db, dal };
+  }
+
+  async function seedRun(
+    db: Awaited<ReturnType<typeof freshWithDb>>['db'],
+    over: { id: string; appId: string; orgId?: string; createdAt: Date },
+  ) {
+    await db.insert(schema.run).values({
+      id: over.id,
+      orgId: over.orgId ?? 'org_a',
+      appId: over.appId,
+      source: 'mcp',
+      goal: 'g',
+      url: 'https://x.com',
+      createdAt: over.createdAt,
+    });
+  }
+
+  const T = (n: number) => new Date(`2026-01-0${n}T00:00:00.000Z`);
+
+  it('returns an empty page with a null cursor for an org with no runs', async () => {
+    const { dal } = await freshWithDb();
+    const page = await dal.forOrg('org_a').runs.list({ limit: 10 });
+    expect(page.rows).toHaveLength(0);
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('a single page (rows <= limit) returns a null cursor', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    await seedRun(db, { id: 'run_1', appId: app.id, createdAt: T(1) });
+    await seedRun(db, { id: 'run_2', appId: app.id, createdAt: T(2) });
+    const page = await a.runs.list({ limit: 10 });
+    expect(page.rows.map((r) => r.id)).toEqual(['run_2', 'run_1']);
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('walks multiple pages with no gap and no overlap', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    for (const n of [1, 2, 3, 4, 5]) await seedRun(db, { id: `run_${n}`, appId: app.id, createdAt: T(n) });
+
+    const seen: string[] = [];
+    let cursor = undefined as undefined | { createdAt: Date; id: string };
+    for (let i = 0; i < 10; i++) {
+      const page = await a.runs.list({ limit: 2, cursor });
+      seen.push(...page.rows.map((r) => r.id));
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    // newest-first, every id exactly once.
+    expect(seen).toEqual(['run_5', 'run_4', 'run_3', 'run_2', 'run_1']);
+  });
+
+  it('splits a created_at tie across the page boundary on the id tie-breaker, no dup/skip', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    // Three runs share one timestamp; id DESC is the deterministic total order.
+    for (const id of ['run_a', 'run_b', 'run_c']) await seedRun(db, { id, appId: app.id, createdAt: T(1) });
+
+    const p1 = await a.runs.list({ limit: 2 });
+    expect(p1.rows.map((r) => r.id)).toEqual(['run_c', 'run_b']);
+    expect(p1.nextCursor).not.toBeNull();
+    const p2 = await a.runs.list({ limit: 2, cursor: p1.nextCursor! });
+    expect(p2.rows.map((r) => r.id)).toEqual(['run_a']);
+    expect(p2.nextCursor).toBeNull();
+  });
+
+  it('sets nextCursor iff a further row exists (limit+1 has_more)', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    await seedRun(db, { id: 'run_1', appId: app.id, createdAt: T(1) });
+    await seedRun(db, { id: 'run_2', appId: app.id, createdAt: T(2) });
+    const exact = await a.runs.list({ limit: 2 });
+    expect(exact.rows.map((r) => r.id)).toEqual(['run_2', 'run_1']);
+    expect(exact.nextCursor).toBeNull(); // exactly limit rows, no +1th
+    const partial = await a.runs.list({ limit: 1 });
+    expect(partial.rows.map((r) => r.id)).toEqual(['run_2']);
+    expect(partial.nextCursor).not.toBeNull();
+  });
+
+  it('a forward walk never revisits rows inserted after the first page (stable under inserts)', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    for (const n of [1, 2, 3]) await seedRun(db, { id: `run_${n}`, appId: app.id, createdAt: T(n) });
+
+    const p1 = await a.runs.list({ limit: 2 });
+    expect(p1.rows.map((r) => r.id)).toEqual(['run_3', 'run_2']);
+    // A new run lands (newer than everything) mid-walk.
+    await seedRun(db, { id: 'run_4', appId: app.id, createdAt: T(4) });
+    const p2 = await a.runs.list({ limit: 2, cursor: p1.nextCursor! });
+    // page 2 only yields the older pre-existing run; the new one sorts above the cursor, never seen here.
+    expect(p2.rows.map((r) => r.id)).toEqual(['run_1']);
+  });
+
+  it('a cursor minted in org A returns only org B rows when replayed against org B [invariant 3]', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const b = dal.forOrg('org_b');
+    const appA = await a.apps.create({ name: 'a' });
+    const appB = await b.apps.create({ name: 'b' });
+    // org_a's runs are strictly NEWER than org_b's, so a cursor minted at org_a's newest sits above
+    // all of org_b in time - no created_at tie to clip - and a correct (org-scoped) replay must
+    // return all 3 of org_b's rows. A cross-tenant leak would instead surface org_a rows.
+    for (const n of [7, 8, 9]) await seedRun(db, { id: `a_${n}`, appId: appA.id, orgId: 'org_a', createdAt: T(n) });
+    for (const n of [1, 2, 3]) await seedRun(db, { id: `b_${n}`, appId: appB.id, orgId: 'org_b', createdAt: T(n) });
+
+    const aPage = await a.runs.list({ limit: 1 });
+    const stolen = aPage.nextCursor!;
+    const bPage = await b.runs.list({ limit: 10, cursor: stolen });
+    // Non-empty assertion first: a `.every()` over an empty array is vacuously true, so an
+    // over-filtering cursor that wrongly empties org_b's page must fail loudly, not pass green.
+    expect(bPage.rows).toHaveLength(3);
+    expect(bPage.rows.every((r) => r.orgId === 'org_b')).toBe(true);
+    expect(bPage.rows.map((r) => r.id).every((id) => id.startsWith('b_'))).toBe(true);
+  });
+
+  it('excludes the exact row the cursor names, returning only strictly-older ties', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    // Two rows at the SAME timestamp: cursor names run_b; the next page must yield run_a only,
+    // and run_b must never reappear (isolates exclusive-boundary from the multi-row tie-split).
+    await seedRun(db, { id: 'run_a', appId: app.id, createdAt: T(1) });
+    await seedRun(db, { id: 'run_b', appId: app.id, createdAt: T(1) });
+    const p1 = await a.runs.list({ limit: 1 });
+    expect(p1.rows.map((r) => r.id)).toEqual(['run_b']);
+    const p2 = await a.runs.list({ limit: 1, cursor: p1.nextCursor! });
+    expect(p2.rows.map((r) => r.id)).toEqual(['run_a']);
+    expect(p2.nextCursor).toBeNull();
+  });
+
+  it('survives the codec Date round-trip (toISOString -> new Date) against the real query', async () => {
+    // Mirrors the seam the route adds: the cursor's createdAt is serialized to an ISO string and
+    // parsed back before it hits the keyset eq()/lt(). If that truncation ever desynced from the
+    // stored timestamp, a boundary row would be skipped or duplicated. Drive a full walk through it.
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    // Includes a created_at tie so the seam is exercised at the exact eq()-boundary, not just lt().
+    await seedRun(db, { id: 'run_1', appId: app.id, createdAt: T(1) });
+    await seedRun(db, { id: 'run_2', appId: app.id, createdAt: T(2) });
+    await seedRun(db, { id: 'run_3', appId: app.id, createdAt: T(2) });
+
+    const seen: string[] = [];
+    let cursor = undefined as undefined | { createdAt: Date; id: string };
+    for (let i = 0; i < 10; i++) {
+      const page = await a.runs.list({ limit: 1, cursor });
+      seen.push(...page.rows.map((r) => r.id));
+      if (!page.nextCursor) break;
+      // Reproduce the codec transform exactly: Date -> ISO string -> Date.
+      cursor = { createdAt: new Date(page.nextCursor.createdAt.toISOString()), id: page.nextCursor.id };
+    }
+    expect(seen).toEqual(['run_3', 'run_2', 'run_1']);
+  });
+
+  it('returns an empty terminal page for a cursor positioned past the end', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app = await a.apps.create({ name: 'a' });
+    await seedRun(db, { id: 'run_2', appId: app.id, createdAt: T(2) });
+    await seedRun(db, { id: 'run_3', appId: app.id, createdAt: T(3) });
+    const page = await a.runs.list({ limit: 10, cursor: { createdAt: T(1), id: 'run_0' } });
+    expect(page.rows).toHaveLength(0);
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('composes the appId filter with the cursor', async () => {
+    const { db, dal } = await freshWithDb();
+    const a = dal.forOrg('org_a');
+    const app1 = await a.apps.create({ name: 'one' });
+    const app2 = await a.apps.create({ name: 'two' });
+    for (const n of [1, 2, 3]) await seedRun(db, { id: `one_${n}`, appId: app1.id, createdAt: T(n) });
+    for (const n of [1, 2, 3]) await seedRun(db, { id: `two_${n}`, appId: app2.id, createdAt: T(n) });
+
+    const seen: string[] = [];
+    let cursor = undefined as undefined | { createdAt: Date; id: string };
+    for (let i = 0; i < 10; i++) {
+      const page = await a.runs.list({ limit: 2, appId: app1.id, cursor });
+      seen.push(...page.rows.map((r) => r.id));
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    expect(seen).toEqual(['one_3', 'one_2', 'one_1']);
   });
 });
 

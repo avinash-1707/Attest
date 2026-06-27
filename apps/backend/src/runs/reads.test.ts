@@ -65,7 +65,7 @@ function makeDeps(): BackendDeps {
   getByRun = vi.fn(async (id: string) => (id === 'run_1' ? attestation() : undefined));
 
   const org = {
-    runs: { list: vi.fn(async () => [runRow]), get: getRun },
+    runs: { list: vi.fn(async () => ({ rows: [runRow], nextCursor: null })), get: getRun },
     attestations: { getByRun, statusByRun: vi.fn(async (id: string) => (id === 'run_1' ? 'passed' : undefined)) },
     evidence: { listForRun: vi.fn(async () => [evRow]), getByStorageKey },
     appKeys: { touchLastUsed: vi.fn(async () => undefined) },
@@ -98,7 +98,63 @@ describe('read API', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
       runs: [{ runId: 'run_1', appId: 'app_1', goal: 'log in', lifecycle: 'completed', status: null, createdAt: TS.toISOString(), durationMs: 1200 }],
+      nextCursor: null,
     });
+    await app.close();
+  });
+
+  it('GET /runs passes the default page size (50) and no cursor when none given', async () => {
+    const deps = makeDeps();
+    const app = buildApp(deps);
+    await app.inject({ method: 'GET', url: '/runs', headers: auth });
+    expect(deps.dal.forOrg('org_1').runs.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 50 }));
+    await app.close();
+  });
+
+  it('GET /runs encodes a forward cursor and round-trips it back to the DAL', async () => {
+    const deps = makeDeps();
+    const cursorRow = { ...runRow, id: 'run_abcdefghijklmnopqrstuvwx', createdAt: new Date('2026-06-20T00:00:00.000Z') };
+    (deps.dal.forOrg('org_1').runs.list as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      rows: [cursorRow],
+      nextCursor: { createdAt: cursorRow.createdAt, id: cursorRow.id },
+    });
+    const app = buildApp(deps);
+    const first = await app.inject({ method: 'GET', url: '/runs?limit=1', headers: auth });
+    const { nextCursor } = first.json();
+    expect(nextCursor).toBeTruthy();
+
+    await app.inject({ method: 'GET', url: `/runs?limit=1&cursor=${encodeURIComponent(nextCursor)}`, headers: auth });
+    expect(deps.dal.forOrg('org_1').runs.list).toHaveBeenLastCalledWith({
+      limit: 1,
+      cursor: { createdAt: cursorRow.createdAt, id: cursorRow.id },
+    });
+    await app.close();
+  });
+
+  it('GET /runs 400s a malformed cursor', async () => {
+    const app = buildApp(makeDeps());
+    const res = await app.inject({ method: 'GET', url: '/runs?cursor=not-a-real-cursor', headers: auth });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('invalid_cursor');
+    await app.close();
+  });
+
+  it('GET /runs 400s a tampered cursor (valid base64url, wrong JSON shape)', async () => {
+    const app = buildApp(makeDeps());
+    const tampered = Buffer.from(JSON.stringify({ foo: 'bar' }), 'utf8').toString('base64url');
+    const res = await app.inject({ method: 'GET', url: `/runs?cursor=${encodeURIComponent(tampered)}`, headers: auth });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('invalid_cursor');
+    await app.close();
+  });
+
+  it('GET /runs 400s an out-of-range, fractional or non-numeric limit', async () => {
+    const app = buildApp(makeDeps());
+    for (const bad of ['0', '101', 'abc', '1.5', '-5']) {
+      const res = await app.inject({ method: 'GET', url: `/runs?limit=${bad}`, headers: auth });
+      expect(res.statusCode, `limit=${bad}`).toBe(400);
+      expect(res.json().code).toBe('invalid_request');
+    }
     await app.close();
   });
 

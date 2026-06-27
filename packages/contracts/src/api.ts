@@ -75,8 +75,22 @@ export const runListItem = z.object({
 });
 export type RunListItem = z.infer<typeof runListItem>;
 
-export const runList = z.object({ runs: z.array(runListItem) });
+// `nextCursor` is the opaque, forward-only keyset token to fetch the next (older) page; null on the
+// last page. Additive within schemaVersion 1.0 (a client that ignores it still reads `runs`).
+export const runList = z.object({
+  runs: z.array(runListItem),
+  nextCursor: z.string().nullable(),
+});
 export type RunList = z.infer<typeof runList>;
+
+// GET /runs query. Keyset pagination: `cursor` is the opaque token from a prior page's nextCursor
+// (omit for the first page); `limit` is clamped to 1..100 (default 50). An out-of-range limit is
+// rejected (ZodError -> 400) rather than silently clamped, so a client bug surfaces.
+export const runListQuery = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type RunListQuery = z.infer<typeof runListQuery>;
 
 // GET /runs/:id/evidence and /evidence/:ref - resolve an opaque ref to its metadata + a fetch URL.
 // The ref is resolved by storageKey server-side; the bytes are served via `url`, never inlined

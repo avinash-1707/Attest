@@ -1,4 +1,4 @@
-import { and, desc, eq, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, lt, notInArray, or, sql } from 'drizzle-orm';
 import type { Source, AgentRole } from '@attest/contracts';
 import type { Db } from './types';
 import { one } from './util';
@@ -7,6 +7,18 @@ import { holdKey } from './credit-ledger.repo';
 import { AppScopeError } from './errors';
 
 export type Run = typeof run.$inferSelect;
+
+// Keyset cursor: the position of the last row of the previous page, under the (createdAt DESC, id
+// DESC) sort. Position only, never tenancy - org scope is re-derived from the session every request.
+export interface RunCursor {
+  createdAt: Date;
+  id: string;
+}
+
+export interface RunListPage {
+  rows: Run[];
+  nextCursor: RunCursor | null;
+}
 
 const TERMINAL = ['completed', 'canceled'] as const;
 
@@ -60,16 +72,34 @@ export function runRepo(db: Db, orgId: string) {
       return row;
     },
 
-    async list(options?: { appId?: string; limit?: number }): Promise<Run[]> {
-      const where = options?.appId
+    // Keyset (cursor) pagination over (createdAt DESC, id DESC). The sort key pairs created_at with
+    // the unique id tie-breaker so a same-millisecond batch can never skip/duplicate a row across a
+    // page boundary. The cursor comparison is EXCLUSIVE and MUST mirror the ORDER BY columns and
+    // direction exactly. Fetches limit+1 to detect a further page without a second count query.
+    async list(options?: { appId?: string; limit?: number; cursor?: RunCursor }): Promise<RunListPage> {
+      const tenancy = options?.appId
         ? and(eq(run.orgId, orgId), eq(run.appId, options.appId))
         : eq(run.orgId, orgId);
-      return db
+      const keyset = options?.cursor
+        ? or(
+            lt(run.createdAt, options.cursor.createdAt),
+            and(eq(run.createdAt, options.cursor.createdAt), lt(run.id, options.cursor.id)),
+          )
+        : undefined;
+      const limit = options?.limit ?? 50;
+      const rows = await db
         .select()
         .from(run)
-        .where(where)
-        .orderBy(desc(run.createdAt))
-        .limit(options?.limit ?? 50);
+        .where(keyset ? and(tenancy, keyset) : tenancy)
+        .orderBy(desc(run.createdAt), desc(run.id))
+        .limit(limit + 1);
+      const hasMore = rows.length > limit;
+      const page = hasMore ? rows.slice(0, limit) : rows;
+      const last = page[page.length - 1];
+      return {
+        rows: page,
+        nextCursor: hasMore && last ? { createdAt: last.createdAt, id: last.id } : null,
+      };
     },
 
     // Claim a run for execution. Guarded against terminal states so a stale/at-least-once re-delivery of

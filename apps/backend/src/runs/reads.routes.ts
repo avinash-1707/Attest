@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { runStatusView, runList, runListItem, evidenceList, evidenceRefView } from '@attest/contracts';
+import { runStatusView, runList, runListItem, runListQuery, evidenceList, evidenceRefView } from '@attest/contracts';
 import type { BackendDeps } from '../platform/deps';
 import { resolveContext } from '../auth/context';
 import { ApiError } from '../platform/errors';
+import { encodeRunCursor, decodeRunCursor } from './cursor';
 
 // Read API [tech-arch §2.2 #5]. All reads go through dal.forOrg(ctx.orgId) so a caller only ever sees
 // its own org's rows [invariant 3]; every response is re-validated against its DTO on the way out.
@@ -12,9 +13,11 @@ export function registerReadRoutes(app: FastifyInstance, deps: BackendDeps): voi
   // queued/running/completed/canceled for the list.
   app.get('/runs', async (req) => {
     const ctx = await resolveContext(req, deps);
-    const runs = await deps.dal.forOrg(ctx.orgId).runs.list({ limit: 100 });
+    const { cursor, limit } = runListQuery.parse(req.query);
+    const decoded = cursor ? decodeRunCursor(cursor) : undefined;
+    const { rows, nextCursor } = await deps.dal.forOrg(ctx.orgId).runs.list({ limit, cursor: decoded });
     return runList.parse({
-      runs: runs.map((r) =>
+      runs: rows.map((r) =>
         runListItem.parse({
           runId: r.id,
           appId: r.appId,
@@ -25,6 +28,7 @@ export function registerReadRoutes(app: FastifyInstance, deps: BackendDeps): voi
           durationMs: r.durationMs ?? null,
         }),
       ),
+      nextCursor: nextCursor ? encodeRunCursor(nextCursor) : null,
     });
   });
 
