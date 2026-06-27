@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <main
       className="attest-vignette attest-grain relative"
-      style={{ overflowX: 'hidden' }}
+      style={{ overflowX: 'clip' }}
     >
       <SiteNav />
       <Hero />
