@@ -1,25 +1,26 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { FiChevronUp, FiChevronDown, FiUser, FiLogOut } from 'react-icons/fi';
 import { useSession, signOut } from '@/lib/auth-client';
 import { WEB_URL } from '@/lib/env';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Avatar } from '@/components/ui/Avatar';
+import { ProfileModal } from './ProfileModal';
 import { useSidebarExpanded } from './SidebarContext';
 
 export function UserMenu() {
   const expanded = useSidebarExpanded();
   const { data: session } = useSession();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const email = session?.user?.email ?? '';
   const name = session?.user?.name || email;
-  const initial = (name || '?').charAt(0).toUpperCase();
+  const image = session?.user?.image ?? null;
 
   useEffect(() => {
     if (!open) return;
@@ -42,11 +43,6 @@ export function UserMenu() {
   useEffect(() => {
     if (!expanded) setOpen(false);
   }, [expanded]);
-
-  function navigate(href: string) {
-    setOpen(false);
-    router.push(href);
-  }
 
   async function handleSignOut() {
     setLoading(true);
@@ -96,26 +92,7 @@ export function UserMenu() {
           if (!open) e.currentTarget.style.backgroundColor = 'transparent';
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 22,
-            height: 22,
-            borderRadius: 'var(--radius-full)',
-            backgroundColor: 'var(--surface-elevated)',
-            boxShadow: 'var(--clay-shadow)',
-            color: 'var(--text-secondary)',
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'var(--text-2xs)',
-            fontWeight: 700,
-            flexShrink: 0,
-          }}
-        >
-          {initial}
-        </span>
+        <Avatar src={image} name={name} size={22} />
         <span
           style={{
             fontFamily: 'var(--font-sans)',
@@ -169,7 +146,7 @@ export function UserMenu() {
         >
           <button
             role="menuitem"
-            onClick={() => navigate('/profile')}
+            onClick={() => { setOpen(false); setProfileOpen(true); }}
             style={menuItemStyle('var(--text-primary)')}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -200,6 +177,8 @@ export function UserMenu() {
         confirmLabel="Sign out"
         loading={loading}
       />
+
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }

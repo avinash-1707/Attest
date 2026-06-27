@@ -10,8 +10,18 @@ import type {
   AppCredentialCreate,
   CheckoutCreate,
 } from '@attest/contracts';
-import { api } from './api';
+import { api, uploadAvatar } from './api';
+import { authClient, updateUser } from './auth-client';
+import { downscaleImage } from './image';
 import { qk } from './query-keys';
+
+// Profile update input. file is the downscaled webp blob; omit to keep the current avatar.
+// removePhoto:true clears the avatar from the session (passes image:null to updateUser).
+export interface UpdateProfileInput {
+  name: string;
+  file?: Blob | null;
+  removePhoto?: boolean;
+}
 
 // Typed React Query hooks over api.ts. Reads are useQuery; every mutation invalidates the list it
 // affects so the UI stays consistent without manual cache surgery. These are the seams the (canvas-
@@ -164,4 +174,34 @@ export function useCheckout() {
 
 export function useBillingPortal() {
   return useMutation({ mutationFn: () => api.getBillingPortal() });
+}
+
+// --- Profile ---
+
+// Orchestrates: downscale -> upload avatar (if a new file is provided) -> updateUser.
+// Upload-then-updateUser is the only partial-safe order: a failed updateUser leaves the blob
+// stored but unlinked; a failed upload leaves the existing image in place.
+// On success, refetches the better-auth session so useSession reflects the new name/image.
+export function useUpdateProfile() {
+  return useMutation({
+    mutationFn: async (input: UpdateProfileInput) => {
+      let imageUrl: string | null | undefined;
+
+      if (input.removePhoto) {
+        imageUrl = null;
+      } else if (input.file) {
+        const scaled = await downscaleImage(input.file instanceof File ? input.file : new File([input.file], 'avatar'));
+        const { image } = await uploadAvatar(scaled);
+        imageUrl = image;
+      }
+
+      await updateUser({
+        name: input.name,
+        ...(imageUrl !== undefined ? { image: imageUrl } : {}),
+      });
+
+      // Bust better-auth's session cache so useSession gets the fresh name+image immediately.
+      await authClient.getSession({ query: { disableCookieCache: true } });
+    },
+  });
 }

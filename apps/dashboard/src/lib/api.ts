@@ -16,6 +16,7 @@ import {
   modelKeyView,
   appCredentialCreate,
   appCredentialView,
+  avatarUploaded,
   billingSummary,
   checkoutSession,
   type BillingSummary,
@@ -36,6 +37,7 @@ import {
   type ModelKeyView,
   type AppCredentialCreate,
   type AppCredentialView,
+  type AvatarUploaded,
 } from '@attest/contracts';
 import { BACKEND_URL } from './env';
 
@@ -155,3 +157,24 @@ export const api = {
   getBillingPortal: () =>
     request<CheckoutSession>('POST', '/billing/portal', { schema: checkoutSession }),
 };
+
+// Separate from request() because the avatar upload is multipart, not JSON.
+// The existing JSON client must not be generalised - this is the only non-JSON surface.
+export async function uploadAvatar(file: Blob): Promise<AvatarUploaded> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${base}/me/avatar`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const { code, message } = await readError(res);
+    throw new ApiError(res.status, code, message ?? `POST /me/avatar -> ${res.status}`);
+  }
+
+  const json: unknown = await res.json();
+  return avatarUploaded.parse(json);
+}
