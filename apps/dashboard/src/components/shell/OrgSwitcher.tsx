@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, organization, authClient } from '@/lib/auth-client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiChevronUp, FiChevronDown, FiPlus } from 'react-icons/fi';
 import { useSidebarExpanded } from './SidebarContext';
+import { CreateOrgDialog } from './CreateOrgDialog';
 
 export function OrgSwitcher() {
   const expanded = useSidebarExpanded();
@@ -13,6 +14,7 @@ export function OrgSwitcher() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,14 +64,13 @@ export function OrgSwitcher() {
   }
 
   const orgInitial = orgName ? orgName.charAt(0).toUpperCase() : '?';
-  const hasMultiple = (orgs?.length ?? 0) > 1;
 
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={() => { if (hasMultiple) setOpen((v) => !v); }}
-        aria-expanded={hasMultiple ? open : undefined}
-        aria-haspopup={hasMultiple ? 'listbox' : undefined}
+        onClick={() => { if (expanded) setOpen((v) => !v); }}
+        aria-expanded={expanded ? open : undefined}
+        aria-haspopup={expanded ? 'menu' : undefined}
         aria-label="Switch workspace"
         title={expanded ? undefined : orgName}
         style={{
@@ -86,13 +87,13 @@ export function OrgSwitcher() {
           backgroundColor: 'var(--surface-elevated)',
           boxShadow: 'var(--clay-shadow)',
           border: 'none',
-          cursor: hasMultiple ? 'pointer' : 'default',
+          cursor: expanded ? 'pointer' : 'default',
           color: 'var(--text-primary)',
           textAlign: 'left',
           transition:
             'box-shadow 80ms ease-out, gap var(--dur-4) var(--ease-out), padding var(--dur-4) var(--ease-out)',
         }}
-        onMouseEnter={(e) => { if (hasMultiple) e.currentTarget.style.boxShadow = 'var(--clay-shadow-hover)'; }}
+        onMouseEnter={(e) => { if (expanded) e.currentTarget.style.boxShadow = 'var(--clay-shadow-hover)'; }}
         onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--clay-shadow)'; }}
       >
         <span
@@ -132,20 +133,18 @@ export function OrgSwitcher() {
         >
           {orgName}
         </span>
-        {hasMultiple && (
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              color: 'var(--text-muted)',
-              opacity: expanded ? 1 : 0,
-              transition: 'opacity var(--dur-4) var(--ease-out)',
-            }}
-          >
-            {open ? <FiChevronUp size={14} strokeWidth={2} /> : <FiChevronDown size={14} strokeWidth={2} />}
-          </span>
-        )}
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: 'var(--text-muted)',
+            opacity: expanded ? 1 : 0,
+            transition: 'opacity var(--dur-4) var(--ease-out)',
+          }}
+        >
+          {open ? <FiChevronUp size={14} strokeWidth={2} /> : <FiChevronDown size={14} strokeWidth={2} />}
+        </span>
       </button>
 
       {switchError && (
@@ -162,9 +161,9 @@ export function OrgSwitcher() {
         </p>
       )}
 
-      {open && hasMultiple && (
+      {open && expanded && (
         <div
-          role="listbox"
+          role="menu"
           aria-label="Workspaces"
           className="attest-dialog-in"
           style={{
@@ -180,13 +179,13 @@ export function OrgSwitcher() {
             zIndex: 50,
           }}
         >
-          {orgs!.map((org) => {
+          {(orgs ?? []).map((org) => {
             const isActive = org.id === activeOrgId;
             return (
               <button
                 key={org.id}
-                role="option"
-                aria-selected={isActive}
+                role="menuitemradio"
+                aria-checked={isActive}
                 onClick={() => handleSwitch(org.id)}
                 style={{
                   display: 'flex',
@@ -244,8 +243,52 @@ export function OrgSwitcher() {
               </button>
             );
           })}
+
+          <button
+            role="menuitem"
+            onClick={() => { setOpen(false); setCreateOpen(true); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--space-2)',
+              width: '100%',
+              padding: `var(--space-2) var(--space-3)`,
+              border: 'none',
+              borderTop:
+                (orgs?.length ?? 0) > 0 ? '1px solid var(--surface-border)' : 'none',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              color: 'var(--text-secondary)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--text-sm)',
+              textAlign: 'left',
+              transition: 'background-color 80ms ease-out',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--surface-elevated)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 20,
+                height: 20,
+                borderRadius: 6,
+                border: '1px dashed var(--surface-border)',
+                color: 'var(--text-muted)',
+                flexShrink: 0,
+              }}
+            >
+              <FiPlus size={12} strokeWidth={2.5} />
+            </span>
+            <span style={{ flex: 1 }}>Create workspace</span>
+          </button>
         </div>
       )}
+
+      <CreateOrgDialog open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
