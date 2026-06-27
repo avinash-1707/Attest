@@ -25,6 +25,7 @@ import { createDiskUserAssetStore } from '@attest/core/adapters/storage/user-ass
 import { createS3UserAssetStore } from '@attest/core/adapters/storage/user-assets-s3';
 import type { BackendConfig } from './config';
 import { buildAuth, type Auth } from '../auth/auth';
+import { withMembershipCache } from './membership-cache';
 import { createConsoleMailer } from '../auth/mailer';
 
 // Read-only here: the backend serves evidence bytes from the same store the worker wrote to
@@ -86,7 +87,9 @@ export interface BackendDeps {
 
 export async function createDeps(config: BackendConfig): Promise<BackendDeps> {
   const db = getDb(config.databaseUrl);
-  const dal = createDataAccess(db);
+  // Cache getUserOrgMemberships (the per-request M1 membership re-check + the login active-org resolver)
+  // behind a short TTL so the hot session path isn't a DB round-trip every request [audit M1 follow-up].
+  const dal = withMembershipCache(createDataAccess(db));
 
   // kekFromEnv throws on a non-32-byte key, failing boot [tech-arch §6.2, fail-closed].
   const keyProvider = createEnvKeyProvider(kekFromEnv(config.kek), config.kekId);
